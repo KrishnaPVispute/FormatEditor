@@ -1,6 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, Trash2 } from "lucide-react";
+import { Plus, Minus, Trash2, Calculator } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { getDisplayValue } from "@/utils/tableFormulas";
 
 export interface TableData {
   rows: string[][];
@@ -53,10 +55,33 @@ const TableSection = ({ data, onChange }: TableSectionProps) => {
     });
   };
 
+  // Check if cell contains a formula
+  const isFormula = (value: string) => value.trim().startsWith('=');
+
   return (
     <Card className="p-6 bg-card">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-card-foreground">Section 2: Table Only</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-card-foreground">Section 2: Table Only</h2>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Calculator className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-semibold mb-1">Formula Support:</p>
+                <ul className="text-xs space-y-1">
+                  <li>=SUM(A1,A2,A3) or =SUM(A1:A3)</li>
+                  <li>=SUB(A1,A2) - Subtract</li>
+                  <li>=MUL(A1,A2) - Multiply</li>
+                  <li>=DIV(A1,A2) - Divide</li>
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={addRow} className="flex items-center gap-1">
             <Plus className="h-4 w-4" />
@@ -82,26 +107,41 @@ const TableSection = ({ data, onChange }: TableSectionProps) => {
             <tbody>
               {data.rows.map((row, rowIndex) => (
                 <tr key={rowIndex} className="group">
-                  {row.map((cell, colIndex) => (
-                    <td key={colIndex} className="border border-input p-0 relative">
-                      <input
-                        type="text"
-                        value={cell}
-                        onChange={(e) => updateCell(rowIndex, colIndex, e.target.value)}
-                        className="w-full p-2 bg-transparent focus:outline-none focus:bg-accent/50 text-foreground"
-                        placeholder="..."
-                      />
-                      {rowIndex === 0 && (
-                        <button
-                          onClick={() => removeColumn(colIndex)}
-                          className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80 bg-card p-1"
-                          title="Remove column"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                      )}
-                    </td>
-                  ))}
+                  {row.map((cell, colIndex) => {
+                    const displayValue = getDisplayValue(cell, data.rows);
+                    const hasFormula = isFormula(cell);
+                    return (
+                      <td key={colIndex} className="border border-input p-0 relative">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <input
+                                type="text"
+                                value={cell}
+                                onChange={(e) => updateCell(rowIndex, colIndex, e.target.value)}
+                                className={`w-full p-2 bg-transparent focus:outline-none focus:bg-accent/50 text-foreground ${hasFormula ? 'text-primary font-medium' : ''}`}
+                                placeholder="..."
+                              />
+                            </TooltipTrigger>
+                            {hasFormula && (
+                              <TooltipContent>
+                                <p>Result: {displayValue}</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                        {rowIndex === 0 && (
+                          <button
+                            onClick={() => removeColumn(colIndex)}
+                            className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/80 bg-card p-1"
+                            title="Remove column"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                        )}
+                      </td>
+                    );
+                  })}
                   <td className="border-none p-1 w-8">
                     <button
                       onClick={() => removeRow(rowIndex)}

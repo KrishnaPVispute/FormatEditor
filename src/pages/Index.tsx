@@ -11,12 +11,14 @@ import { toast } from "@/hooks/use-toast";
 import TextSection, { TextItem } from "@/components/TextSection";
 import TableSection, { TableData } from "@/components/TableSection";
 import MixedSection, { MixedItem } from "@/components/MixedSection";
-import TemplatePreview from "@/components/TemplatePreview";
-import { Save, Wand2 } from "lucide-react";
+import HeadingTableSection, { HeadingTableItem } from "@/components/HeadingTableSection";
+import TemplatePreview, { TEMPLATES, TemplateInfo } from "@/components/TemplatePreview";
+import { exportToPDF, exportToWord, ExportData } from "@/utils/exportUtils";
+import { Save, Wand2, FileDown, FileText } from "lucide-react";
 
 const Index = () => {
-  const [selectedTemplate, setSelectedTemplate] = useState<"LCA" | "LCP" | "">("");
-  const [generatedTemplate, setGeneratedTemplate] = useState<"LCA" | "LCP" | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [generatedTemplate, setGeneratedTemplate] = useState<TemplateInfo | null>(null);
 
   // Section 1: Text only
   const [textItems, setTextItems] = useState<TextItem[]>([]);
@@ -27,11 +29,15 @@ const Index = () => {
   // Section 3: Mixed content
   const [mixedItems, setMixedItems] = useState<MixedItem[]>([]);
 
+  // Section 4: Heading + Table
+  const [headingTableItems, setHeadingTableItems] = useState<HeadingTableItem[]>([]);
+
   const handleSave = () => {
     const savedData = {
       section1: textItems,
       section2: tableData,
       section3: mixedItems,
+      section4: headingTableItems,
       savedAt: new Date().toISOString(),
     };
 
@@ -44,21 +50,109 @@ const Index = () => {
   };
 
   const handleGenerate = () => {
-    if (!selectedTemplate) {
+    if (!selectedTemplateId) {
       toast({
         title: "No Template Selected",
-        description: "Please select a template (LCA or LCP) from the dropdown.",
+        description: "Please select a template from the dropdown.",
         variant: "destructive",
       });
       return;
     }
 
-    setGeneratedTemplate(selectedTemplate as "LCA" | "LCP");
+    const template = TEMPLATES.find(t => t.id === selectedTemplateId);
+    if (template) {
+      setGeneratedTemplate(template);
+      toast({
+        title: "Template Generated",
+        description: `Your content has been applied to the ${template.name} template.`,
+      });
+    }
+  };
+
+  const getPatientName = () => {
+    const nameItem = textItems.find(item => 
+      item.content.toLowerCase().includes('patient') || 
+      item.content.toLowerCase().includes('claimant') ||
+      item.content.toLowerCase().includes('mr.') ||
+      item.content.toLowerCase().includes('ms.')
+    );
+    return nameItem?.content || "Mr. John Doe";
+  };
+
+  const handleExportPDF = async () => {
+    if (!generatedTemplate) {
+      toast({
+        title: "No Template Generated",
+        description: "Please generate a template first before exporting.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     toast({
-      title: "Template Generated",
-      description: `Your content has been applied to the ${selectedTemplate} template.`,
+      title: "Exporting PDF",
+      description: "Your PDF is being generated...",
     });
+
+    try {
+      await exportToPDF('template-preview-content', `${generatedTemplate.name}_Report`);
+      toast({
+        title: "PDF Exported",
+        description: "Your PDF has been downloaded successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "There was an error exporting the PDF.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportWord = async () => {
+    if (!generatedTemplate) {
+      toast({
+        title: "No Template Generated",
+        description: "Please generate a template first before exporting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Exporting Word",
+      description: "Your Word document is being generated...",
+    });
+
+    try {
+      const exportData: ExportData = {
+        template: generatedTemplate.name,
+        patientName: getPatientName(),
+        textItems: textItems.map(item => ({ type: item.type, content: item.content })),
+        tableData: tableData,
+        mixedItems: mixedItems.map(item => ({ 
+          type: item.type, 
+          content: item.content,
+          tableData: item.tableData,
+        })),
+        headingTableItems: headingTableItems.map(item => ({
+          heading: item.heading,
+          tableData: item.tableData,
+        })),
+      };
+
+      await exportToWord(exportData, `${generatedTemplate.name}_Report`);
+      toast({
+        title: "Word Exported",
+        description: "Your Word document has been downloaded successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "There was an error exporting the Word document.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -69,23 +163,46 @@ const Index = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h1 className="text-2xl font-bold text-foreground">Format Editor</h1>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
               <Select
-                value={selectedTemplate}
-                onValueChange={(value) => setSelectedTemplate(value as "LCA" | "LCP" | "")}
+                value={selectedTemplateId}
+                onValueChange={setSelectedTemplateId}
               >
-                <SelectTrigger className="w-[180px] bg-background">
+                <SelectTrigger className="w-[220px] bg-background">
                   <SelectValue placeholder="Select Template" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50">
-                  <SelectItem value="LCA">LCA</SelectItem>
-                  <SelectItem value="LCP">LCP</SelectItem>
+                  {TEMPLATES.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
               <Button onClick={handleGenerate} className="flex items-center gap-2">
                 <Wand2 className="h-4 w-4" />
                 Generate
+              </Button>
+
+              <Button 
+                onClick={handleExportPDF} 
+                variant="outline" 
+                className="flex items-center gap-2"
+                disabled={!generatedTemplate}
+              >
+                <FileDown className="h-4 w-4" />
+                PDF
+              </Button>
+
+              <Button 
+                onClick={handleExportWord} 
+                variant="outline" 
+                className="flex items-center gap-2"
+                disabled={!generatedTemplate}
+              >
+                <FileText className="h-4 w-4" />
+                Word
               </Button>
             </div>
           </div>
@@ -100,6 +217,7 @@ const Index = () => {
             <TextSection items={textItems} onChange={setTextItems} />
             <TableSection data={tableData} onChange={setTableData} />
             <MixedSection items={mixedItems} onChange={setMixedItems} />
+            <HeadingTableSection items={headingTableItems} onChange={setHeadingTableItems} />
 
             {/* Save Button */}
             <div className="flex justify-center pt-4">
@@ -116,13 +234,14 @@ const Index = () => {
           </div>
 
           {/* Preview Column */}
-          <div className="lg:sticky lg:top-24 lg:self-start">
+          <div className="lg:sticky lg:top-24 lg:self-start overflow-auto max-h-[calc(100vh-120px)]">
             <h2 className="text-lg font-semibold text-foreground mb-4">Template Preview</h2>
             <TemplatePreview
               template={generatedTemplate}
               textItems={textItems}
               tableData={tableData}
               mixedItems={mixedItems}
+              headingTableItems={headingTableItems}
             />
           </div>
         </div>
