@@ -4,10 +4,8 @@ import { TableData } from "./TableSection";
 import { MixedItem } from "./MixedSection";
 import { FileText } from "lucide-react";
 import { getDisplayValue } from "@/utils/tableFormulas";
-import lcaLogo from "@/assets/lca-logo.png";
-import lcpLogo from "@/assets/lcp-logo.png";
-import lcaCover from "@/assets/lca-cover.jpg";
-import lcpCover from "@/assets/lcp-cover.jpg";
+import neilGhodadraLogo from "@/assets/neil-ghodadra-logo.jpg";
+import paulGhattasLogo from "@/assets/paul-ghattas-logo.png";
 
 export interface TemplateInfo {
   id: string;
@@ -18,8 +16,6 @@ export interface TemplateInfo {
 
 export const TEMPLATES: TemplateInfo[] = [
   { id: "neil-ghodadra-lca", name: "Neil Ghodadra (LCA)", type: "LCA", doctorName: "NEIL GHODADRA, M.D." },
-  { id: "stanley-graves-lca", name: "Stanley Graves (LCA)", type: "LCA", doctorName: "Stanley Graves, M.D." },
-  { id: "yusef-imani-lca", name: "Yusef Imani (LCA)", type: "LCA", doctorName: "Yusef Imani, M.D." },
   { id: "paul-ghattas-lcp", name: "Paul Ghattas (LCP)", type: "LCP", doctorName: "Paul Ghattas, D.O." },
 ];
 
@@ -48,7 +44,8 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
   }
 
   const isLCA = template.type === "LCA";
-  const headerColor = isLCA ? '#CC7900' : '#2E74B5';
+  const headerColor = isLCA ? '#CC7900' : '#CC7900'; // Orange/gold for both based on templates
+  const lcpBlue = '#2E74B5';
   const altRowColor = isLCA ? '#FFF5E6' : '#E6F0FA';
   const currentDate = new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
@@ -109,6 +106,7 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
     if (rows.length === 0) {
       return <p style={{ ...baseTextStyle, color: '#888', fontStyle: 'italic' }}>[No table data]</p>;
     }
+    const tableHeaderColor = isLCA ? '#CC7900' : '#2E74B5';
     return (
       <div style={{ marginBottom: '16px' }}>
         {tableHeader && (
@@ -117,7 +115,7 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
             fontWeight: 'bold', 
             fontSize: '13px', 
             marginBottom: '8px', 
-            color: headerColor 
+            color: tableHeaderColor 
           }}>
             {tableHeader}
           </h3>
@@ -133,7 +131,7 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
                       style={{
                         border: '1px solid #ccc',
                         padding: '6px 8px',
-                        backgroundColor: ri === 0 ? headerColor : (ri % 2 === 0 ? altRowColor : '#FFFFFF'),
+                        backgroundColor: ri === 0 ? tableHeaderColor : (ri % 2 === 0 ? altRowColor : '#FFFFFF'),
                         color: ri === 0 ? '#FFFFFF' : '#000000',
                         fontWeight: ri === 0 ? 'bold' : 'normal',
                         textAlign: ri === 0 ? 'center' : 'left',
@@ -194,188 +192,346 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
     fontSize: FONT_SIZE,
     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
     margin: '0 auto',
+    position: 'relative',
   };
 
-  return (
-    <div id="template-preview-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Page 1 - Cover Page (exact template preserved) */}
-      <div style={pageStyle}>
+  // Render LCA Cover Page (Neil Ghodadra)
+  const renderLCACoverPage = () => (
+    <div style={pageStyle}>
+      <div style={{ 
+        height: `${A4_HEIGHT}px`, 
+        display: 'flex', 
+        flexDirection: 'column',
+        padding: '60px 50px 40px 50px',
+      }}>
+        {/* Logo and Header - centered at top */}
         <div style={{ 
-          width: '100%', 
-          height: `${A4_HEIGHT}px`, 
-          position: 'relative',
-          backgroundImage: `url(${isLCA ? lcaCover : lcpCover})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          marginBottom: '40px',
         }}>
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            flexDirection: 'column',
+          <img 
+            src={neilGhodadraLogo} 
+            alt="NG Logo" 
+            style={{ height: '120px', width: 'auto', marginBottom: '20px' }}
+          />
+          <h1 style={{ 
+            fontSize: '28px', 
+            fontWeight: 'bold', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: 0,
           }}>
-            {/* Header with logo */}
-            <div style={{ 
-              padding: '40px 50px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '20px',
-            }}>
-              <img 
-                src={isLCA ? lcaLogo : lcpLogo} 
-                alt="Logo" 
-                style={{ height: '80px', width: 'auto', objectFit: 'contain' }}
-              />
-              <div>
-                <h1 style={{ 
-                  fontSize: '24px', 
-                  fontWeight: 'bold', 
-                  color: headerColor,
-                  fontFamily: 'Times New Roman, serif',
-                  margin: 0,
-                }}>
-                  {template.doctorName}
-                </h1>
-                <p style={{ 
-                  fontSize: '14px', 
-                  color: '#333',
-                  fontFamily: 'Times New Roman, serif',
-                  margin: '4px 0 0 0',
-                }}>
-                  Board-Certified Orthopedic Surgeon
-                </p>
-                <p style={{ 
-                  fontSize: '14px', 
-                  color: '#333',
-                  fontFamily: 'Times New Roman, serif',
-                  margin: '2px 0 0 0',
-                }}>
-                  Certified Life Care Planner
-                </p>
-              </div>
-            </div>
+            NEIL GHODADRA, M.D.
+          </h1>
+        </div>
 
-            {/* Main Title Section */}
-            <div style={{ 
-              flex: 1, 
-              display: 'flex', 
-              flexDirection: 'column', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              padding: '0 50px',
-            }}>
-              <h1 style={{ 
-                fontSize: '36px', 
-                fontWeight: 'bold', 
-                color: headerColor,
-                fontFamily: 'Times New Roman, serif',
-                textAlign: 'center',
-                margin: '0 0 20px 0',
-              }}>
-                {isLCA ? "LIFE CARE ANALYSIS" : "LIFE CARE PLAN"}
-              </h1>
-              <p style={{ 
-                fontSize: '20px', 
-                color: '#000',
-                fontFamily: 'Times New Roman, serif',
-                textAlign: 'center',
-                margin: '0 0 10px 0',
-              }}>
-                {isLCA ? "For" : "Prepared for"} {getPatientName()}
-              </p>
-              {!isLCA && (
-                <p style={{ 
-                  fontSize: '16px', 
-                  color: '#333',
-                  fontFamily: 'Times New Roman, serif',
-                  textAlign: 'center',
-                  margin: '0 0 10px 0',
-                }}>
-                  By {template.doctorName}
-                </p>
-              )}
-              <p style={{ 
-                fontSize: '16px', 
-                color: '#333',
-                fontFamily: 'Times New Roman, serif',
-                textAlign: 'center',
-                margin: '10px 0',
-              }}>
-                Board-Certified Orthopedic Surgeon and Certified Life Care Planner
-              </p>
-              <p style={{ 
-                fontSize: '18px', 
-                color: '#000',
-                fontFamily: 'Times New Roman, serif',
-                textAlign: 'center',
-                margin: '20px 0 0 0',
-              }}>
-                {currentDate}
-              </p>
-            </div>
+        {/* Credentials */}
+        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <p style={{ 
+            fontSize: '14px', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: '4px 0',
+          }}>
+            Board-Certified Orthopedic Surgeon
+          </p>
+          <p style={{ 
+            fontSize: '14px', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: '4px 0',
+          }}>
+            Certified Life Care Planner
+          </p>
+        </div>
 
-            {/* Confidentiality Notice */}
-            <div style={{ padding: '30px 50px' }}>
-              <p style={{ 
-                fontSize: '10px', 
-                color: '#666',
-                fontFamily: 'Times New Roman, serif',
-                fontStyle: 'italic',
-                textAlign: 'justify',
-                lineHeight: '1.4',
-              }}>
-                This report is confidential and protected by attorney-client privilege. 
-                It is intended solely for the named recipient and contains information 
-                related to a {isLCA ? "Life Care Analysis (LCA)" : "Life Care Plan (LCP)"}. 
-                Any unauthorized disclosure, copying, or distribution of this report is strictly prohibited.
-              </p>
-            </div>
-          </div>
+        {/* Main Title */}
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <h1 style={{ 
+            fontSize: '28px', 
+            fontWeight: 'bold', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: 0,
+          }}>
+            LIFE CARE ANALYSIS
+          </h1>
+        </div>
+
+        {/* For Patient */}
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <p style={{ 
+            fontSize: '16px', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: '10px 0',
+          }}>
+            For
+          </p>
+          <p style={{ 
+            fontSize: '18px', 
+            color: '#5B9BD5',
+            fontFamily: 'Times New Roman, serif',
+            margin: '10px 0',
+          }}>
+            {getPatientName()}
+          </p>
+        </div>
+
+        {/* Date */}
+        <div style={{ textAlign: 'center', flex: 1 }}>
+          <p style={{ 
+            fontSize: '14px', 
+            fontWeight: 'bold',
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+          }}>
+            {currentDate}
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div style={{ 
+          borderTop: '1px solid #ddd',
+          paddingTop: '20px',
+          marginTop: 'auto',
+        }}>
+          <p style={{ 
+            fontSize: '12px', 
+            color: '#5B9BD5',
+            fontFamily: 'Times New Roman, serif',
+            textAlign: 'center',
+            margin: '0 0 8px 0',
+          }}>
+            1
+          </p>
+          <p style={{ 
+            fontSize: '12px', 
+            fontWeight: 'bold',
+            color: '#CC7900',
+            fontFamily: 'Times New Roman, serif',
+            textAlign: 'center',
+            margin: '0 0 10px 0',
+          }}>
+            NEIL GHODADRA, M.D.
+          </p>
+          <p style={{ 
+            fontSize: '9px', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            textAlign: 'center',
+            lineHeight: '1.4',
+          }}>
+            This report is confidential and protected by attorney-client privilege. It is intended solely for the named recipient and contains information related to a Life Care Analysis (LCA). Any unauthorized disclosure, copying, or distribution of this report is strictly prohibited.
+          </p>
         </div>
       </div>
+    </div>
+  );
 
-      {/* Page 2+ - Content Pages */}
+  // Render LCP Cover Page (Paul Ghattas)
+  const renderLCPCoverPage = () => (
+    <div style={pageStyle}>
+      <div style={{ 
+        height: `${A4_HEIGHT}px`, 
+        display: 'flex', 
+        flexDirection: 'column',
+        padding: '40px 50px 40px 50px',
+      }}>
+        {/* Logo and Header - centered at top */}
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          marginBottom: '20px',
+        }}>
+          <img 
+            src={paulGhattasLogo} 
+            alt="PG Logo" 
+            style={{ height: '100px', width: 'auto', marginBottom: '15px' }}
+          />
+          <h1 style={{ 
+            fontSize: '24px', 
+            fontWeight: 'bold', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: 0,
+          }}>
+            Paul Ghattas, D.O.
+          </h1>
+          <p style={{ 
+            fontSize: '12px', 
+            color: '#666666',
+            fontFamily: 'Times New Roman, serif',
+            margin: '4px 0 0 0',
+          }}>
+            Board Certified Orthopedic Surgeon
+          </p>
+        </div>
+
+        {/* Main Title */}
+        <div style={{ textAlign: 'center', marginTop: '40px', marginBottom: '30px' }}>
+          <h1 style={{ 
+            fontSize: '32px', 
+            fontWeight: 'bold', 
+            color: '#CC7900',
+            fontFamily: 'Times New Roman, serif',
+            margin: 0,
+          }}>
+            LIFE CARE PLAN
+          </h1>
+        </div>
+
+        {/* Prepared for Patient */}
+        <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+          <p style={{ 
+            fontSize: '16px', 
+            fontWeight: 'bold',
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: '10px 0',
+          }}>
+            Prepared for {getPatientName()}
+          </p>
+          <p style={{ 
+            fontSize: '14px', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: '10px 0',
+          }}>
+            By Paul Ghattas, D.O.
+          </p>
+          <p style={{ 
+            fontSize: '13px', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: '10px 0',
+          }}>
+            Board-Certified Orthopedic Surgeon and Certified Life Care Planner
+          </p>
+        </div>
+
+        {/* Date */}
+        <div style={{ textAlign: 'center', marginTop: '30px' }}>
+          <p style={{ 
+            fontSize: '14px', 
+            fontWeight: 'bold',
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+          }}>
+            {currentDate}
+          </p>
+        </div>
+
+        {/* Patient Details - right aligned */}
+        <div style={{ 
+          marginTop: '60px',
+          marginLeft: 'auto',
+          marginRight: '100px',
+        }}>
+          <p style={{ 
+            fontSize: '13px', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: '8px 0',
+          }}>
+            <strong>Age:</strong> XX years
+          </p>
+          <p style={{ 
+            fontSize: '13px', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: '8px 0',
+          }}>
+            <strong>DOB:</strong> Month XX, 20XX
+          </p>
+          <p style={{ 
+            fontSize: '13px', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: '8px 0',
+          }}>
+            <strong>DOI:</strong> Month XX, 20XX
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div style={{ 
+          marginTop: 'auto',
+          paddingTop: '20px',
+        }}>
+          <p style={{ 
+            fontSize: '12px', 
+            color: '#5B9BD5',
+            fontFamily: 'Times New Roman, serif',
+            textAlign: 'center',
+            margin: '0 0 8px 0',
+          }}>
+            1
+          </p>
+          <p style={{ 
+            fontSize: '12px', 
+            fontWeight: 'bold',
+            color: '#CC7900',
+            fontFamily: 'Times New Roman, serif',
+            textAlign: 'center',
+            margin: 0,
+          }}>
+            PAUL GHATTAS, D.O.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Content Pages
+  const renderContentPages = () => {
+    const tableHeaderColor = isLCA ? '#CC7900' : '#2E74B5';
+    const logo = isLCA ? neilGhodadraLogo : paulGhattasLogo;
+    const doctorName = isLCA ? 'NEIL GHODADRA, M.D.' : 'PAUL GHATTAS, D.O.';
+    const reportType = isLCA ? 'Life Care Analysis (LCA)' : 'Life Care Plan (LCP)';
+
+    return (
       <div style={pageStyle}>
         {/* Page Header */}
         <div style={{ 
           padding: '20px 40px', 
-          borderBottom: `2px solid ${headerColor}`, 
+          borderBottom: `2px solid ${tableHeaderColor}`, 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img 
-              src={isLCA ? lcaLogo : lcpLogo} 
+              src={logo} 
               alt="Logo" 
               style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
             />
             <span style={{ 
               fontSize: '12px', 
               fontWeight: 'bold', 
-              color: headerColor,
+              color: tableHeaderColor,
               fontFamily: 'Times New Roman, serif',
             }}>
-              {template.doctorName}
+              {doctorName}
             </span>
           </div>
         </div>
 
         {/* Content Area */}
-        <div style={{ padding: '30px 40px' }}>
+        <div style={{ padding: '30px 40px', overflow: 'hidden' }}>
           {/* Section 1: Text Content */}
           {textItems.length > 0 && (
             <div style={{ marginBottom: '30px' }}>
               <h2 style={{ 
                 fontSize: '16px', 
                 fontWeight: 'bold', 
-                color: headerColor,
+                color: tableHeaderColor,
                 fontFamily: 'Times New Roman, serif',
                 marginBottom: '12px',
-                borderBottom: `1px solid ${headerColor}`,
+                borderBottom: `1px solid ${tableHeaderColor}`,
                 paddingBottom: '6px',
               }}>
                 {isLCA ? "Life Care Analysis" : "Overview"}
@@ -392,16 +548,16 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
               <h2 style={{ 
                 fontSize: '16px', 
                 fontWeight: 'bold', 
-                color: headerColor,
+                color: tableHeaderColor,
                 fontFamily: 'Times New Roman, serif',
                 marginBottom: '12px',
-                borderBottom: `1px solid ${headerColor}`,
+                borderBottom: `1px solid ${tableHeaderColor}`,
                 paddingBottom: '6px',
               }}>
-                {isLCA ? "Total Expenditures" : "Summary Cost Projection Tables"}
+                {tableData.header || (isLCA ? "Total Expenditures" : "Summary Cost Projection Tables")}
               </h2>
               <div style={{ paddingLeft: '10px' }}>
-                {renderTable(tableData.rows, 'main-table', tableData.header)}
+                {renderTable(tableData.rows, 'main-table')}
               </div>
             </div>
           )}
@@ -412,10 +568,10 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
               <h2 style={{ 
                 fontSize: '16px', 
                 fontWeight: 'bold', 
-                color: headerColor,
+                color: tableHeaderColor,
                 fontFamily: 'Times New Roman, serif',
                 marginBottom: '12px',
-                borderBottom: `1px solid ${headerColor}`,
+                borderBottom: `1px solid ${tableHeaderColor}`,
                 paddingBottom: '6px',
               }}>
                 {isLCA ? "Detailed Analysis" : "Future Medical Requirements"}
@@ -438,7 +594,11 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
         <div style={{ 
           padding: '15px 40px',
           borderTop: '1px solid #ddd',
-          marginTop: 'auto',
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#FFFFFF',
         }}>
           <p style={{ 
             fontSize: '9px', 
@@ -447,14 +607,25 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
             fontStyle: 'italic',
             textAlign: 'center',
             lineHeight: '1.4',
+            margin: 0,
           }}>
             This report is confidential and protected by attorney-client privilege. 
             It is intended solely for the named recipient and contains information 
-            related to a {isLCA ? "Life Care Analysis (LCA)" : "Life Care Plan (LCP)"}. 
+            related to a {reportType}. 
             Any unauthorized disclosure, copying, or distribution of this report is strictly prohibited.
           </p>
         </div>
       </div>
+    );
+  };
+
+  return (
+    <div id="template-preview-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Page 1 - Cover Page */}
+      {isLCA ? renderLCACoverPage() : renderLCPCoverPage()}
+
+      {/* Page 2+ - Content Pages (only if there's content) */}
+      {(textItems.length > 0 || tableData.rows.length > 0 || mixedItems.length > 0) && renderContentPages()}
 
       {/* Template Info Footer */}
       <div style={{ 
