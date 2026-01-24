@@ -2,7 +2,6 @@ import { Card } from "@/components/ui/card";
 import { TextItem } from "./TextSection";
 import { TableData } from "./TableSection";
 import { MixedItem } from "./MixedSection";
-import { HeadingTableItem } from "./HeadingTableSection";
 import { FileText } from "lucide-react";
 import { getDisplayValue } from "@/utils/tableFormulas";
 import lcaLogo from "@/assets/lca-logo.png";
@@ -29,15 +28,14 @@ interface TemplatePreviewProps {
   textItems: TextItem[];
   tableData: TableData;
   mixedItems: MixedItem[];
-  headingTableItems: HeadingTableItem[];
 }
 
-// A4 dimensions in pixels at 96 DPI: 794 x 1123 (210mm x 297mm)
+// A4 dimensions in pixels at 96 DPI
 const A4_WIDTH = 794;
 const A4_HEIGHT = 1123;
-const FONT_SIZE = "11px"; // Fixed font size
+const FONT_SIZE = "11px";
 
-const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTableItems }: TemplatePreviewProps) => {
+const TemplatePreview = ({ template, textItems, tableData, mixedItems }: TemplatePreviewProps) => {
   if (!template) {
     return (
       <Card className="p-8 bg-card min-h-[400px] flex flex-col items-center justify-center">
@@ -58,7 +56,6 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
     day: 'numeric' 
   });
 
-  // Extract patient name from textItems if available
   const getPatientName = () => {
     const nameItem = textItems.find(item => 
       item.content.toLowerCase().includes('patient') || 
@@ -69,7 +66,7 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
     return nameItem?.content || "Mr. John Doe";
   };
 
-  const baseTextStyle = {
+  const baseTextStyle: React.CSSProperties = {
     fontFamily: 'Times New Roman, serif',
     fontSize: FONT_SIZE,
     lineHeight: '1.5',
@@ -108,36 +105,49 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
     });
   };
 
-  const renderTable = (rows: string[][], tableId?: string) => {
+  const renderTable = (rows: string[][], tableId?: string, tableHeader?: string) => {
     if (rows.length === 0) {
       return <p style={{ ...baseTextStyle, color: '#888', fontStyle: 'italic' }}>[No table data]</p>;
     }
     return (
-      <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', ...baseTextStyle }}>
-          <tbody>
-            {rows.map((row, ri) => (
-              <tr key={`${tableId || 'table'}-row-${ri}`}>
-                {row.map((cell, ci) => (
-                  <td
-                    key={`${tableId || 'table'}-cell-${ri}-${ci}`}
-                    style={{
-                      border: '1px solid #ccc',
-                      padding: '6px 8px',
-                      backgroundColor: ri === 0 ? headerColor : (ri % 2 === 0 ? altRowColor : '#FFFFFF'),
-                      color: ri === 0 ? '#FFFFFF' : '#000000',
-                      fontWeight: ri === 0 ? 'bold' : 'normal',
-                      textAlign: ri === 0 ? 'center' : 'left',
-                      fontSize: FONT_SIZE,
-                    }}
-                  >
-                    {getDisplayValue(cell, rows) || "-"}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div style={{ marginBottom: '16px' }}>
+        {tableHeader && (
+          <h3 style={{ 
+            ...baseTextStyle, 
+            fontWeight: 'bold', 
+            fontSize: '13px', 
+            marginBottom: '8px', 
+            color: headerColor 
+          }}>
+            {tableHeader}
+          </h3>
+        )}
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', ...baseTextStyle }}>
+            <tbody>
+              {rows.map((row, ri) => (
+                <tr key={`${tableId || 'table'}-row-${ri}`}>
+                  {row.map((cell, ci) => (
+                    <td
+                      key={`${tableId || 'table'}-cell-${ri}-${ci}`}
+                      style={{
+                        border: '1px solid #ccc',
+                        padding: '6px 8px',
+                        backgroundColor: ri === 0 ? headerColor : (ri % 2 === 0 ? altRowColor : '#FFFFFF'),
+                        color: ri === 0 ? '#FFFFFF' : '#000000',
+                        fontWeight: ri === 0 ? 'bold' : 'normal',
+                        textAlign: ri === 0 ? 'center' : 'left',
+                        fontSize: FONT_SIZE,
+                      }}
+                    >
+                      {getDisplayValue(cell, rows) || "-"}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   };
@@ -176,18 +186,7 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
     });
   };
 
-  const renderHeadingTables = () => {
-    return headingTableItems.map((item) => (
-      <div key={item.id} style={{ marginBottom: '20px' }}>
-        <h3 style={{ ...baseTextStyle, fontWeight: 'bold', fontSize: '13px', marginBottom: '8px', color: headerColor }}>
-          {item.heading || "[Table Heading]"}
-        </h3>
-        {renderTable(item.tableData.rows, item.id)}
-      </div>
-    ));
-  };
-
-  const pageStyle = {
+  const pageStyle: React.CSSProperties = {
     width: `${A4_WIDTH}px`,
     minHeight: `${A4_HEIGHT}px`,
     backgroundColor: '#FFFFFF',
@@ -199,9 +198,8 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
 
   return (
     <div id="template-preview-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Page 1 - Cover Page (Using exact template structure) */}
+      {/* Page 1 - Cover Page (exact template preserved) */}
       <div style={pageStyle}>
-        {/* Cover page with background image showing the exact template design */}
         <div style={{ 
           width: '100%', 
           height: `${A4_HEIGHT}px`, 
@@ -210,7 +208,6 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}>
-          {/* Overlay for content - positioned to match template */}
           <div style={{
             position: 'absolute',
             top: 0,
@@ -220,7 +217,7 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
             display: 'flex',
             flexDirection: 'column',
           }}>
-            {/* Header with logo - matching template */}
+            {/* Header with logo */}
             <div style={{ 
               padding: '40px 50px', 
               display: 'flex', 
@@ -261,7 +258,7 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
               </div>
             </div>
 
-            {/* Main Title Section - centered */}
+            {/* Main Title Section */}
             <div style={{ 
               flex: 1, 
               display: 'flex', 
@@ -320,10 +317,8 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
               </p>
             </div>
 
-            {/* Confidentiality Notice at bottom */}
-            <div style={{ 
-              padding: '30px 50px',
-            }}>
+            {/* Confidentiality Notice */}
+            <div style={{ padding: '30px 50px' }}>
               <p style={{ 
                 fontSize: '10px', 
                 color: '#666',
@@ -347,7 +342,7 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
         {/* Page Header */}
         <div style={{ 
           padding: '20px 40px', 
-          borderBottom: '2px solid ' + headerColor, 
+          borderBottom: `2px solid ${headerColor}`, 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
@@ -380,7 +375,7 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
                 color: headerColor,
                 fontFamily: 'Times New Roman, serif',
                 marginBottom: '12px',
-                borderBottom: '1px solid ' + headerColor,
+                borderBottom: `1px solid ${headerColor}`,
                 paddingBottom: '6px',
               }}>
                 {isLCA ? "Life Care Analysis" : "Overview"}
@@ -400,13 +395,13 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
                 color: headerColor,
                 fontFamily: 'Times New Roman, serif',
                 marginBottom: '12px',
-                borderBottom: '1px solid ' + headerColor,
+                borderBottom: `1px solid ${headerColor}`,
                 paddingBottom: '6px',
               }}>
                 {isLCA ? "Total Expenditures" : "Summary Cost Projection Tables"}
               </h2>
               <div style={{ paddingLeft: '10px' }}>
-                {renderTable(tableData.rows, 'main-table')}
+                {renderTable(tableData.rows, 'main-table', tableData.header)}
               </div>
             </div>
           )}
@@ -420,7 +415,7 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
                 color: headerColor,
                 fontFamily: 'Times New Roman, serif',
                 marginBottom: '12px',
-                borderBottom: '1px solid ' + headerColor,
+                borderBottom: `1px solid ${headerColor}`,
                 paddingBottom: '6px',
               }}>
                 {isLCA ? "Detailed Analysis" : "Future Medical Requirements"}
@@ -431,28 +426,8 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems, headingTa
             </div>
           )}
 
-          {/* Section 4: Heading Tables */}
-          {headingTableItems.length > 0 && (
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ 
-                fontSize: '16px', 
-                fontWeight: 'bold', 
-                color: headerColor,
-                fontFamily: 'Times New Roman, serif',
-                marginBottom: '12px',
-                borderBottom: '1px solid ' + headerColor,
-                paddingBottom: '6px',
-              }}>
-                Additional Tables
-              </h2>
-              <div style={{ paddingLeft: '10px' }}>
-                {renderHeadingTables()}
-              </div>
-            </div>
-          )}
-
           {/* Show placeholder if no content */}
-          {textItems.length === 0 && tableData.rows.length === 0 && mixedItems.length === 0 && headingTableItems.length === 0 && (
+          {textItems.length === 0 && tableData.rows.length === 0 && mixedItems.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
               <p style={baseTextStyle}>Add content in the sections on the left to populate this template.</p>
             </div>
