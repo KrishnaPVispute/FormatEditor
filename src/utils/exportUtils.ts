@@ -1,5 +1,8 @@
 import { saveAs } from 'file-saver';
 import { Document, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, Packer } from 'docx';
+import DOMPurify from 'dompurify';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 export interface ExportData {
   template: string;
@@ -9,34 +12,59 @@ export interface ExportData {
   mixedItems: Array<{ type: string; content: string; tableData?: { rows: string[][] } }>;
 }
 
-// Export to PDF using html2pdf
+// Export to PDF using jspdf + html2canvas with DOMPurify sanitization
 export const exportToPDF = async (elementId: string, filename: string) => {
   const element = document.getElementById(elementId);
   if (!element) {
-    console.error('Element not found for PDF export');
-    return;
+    throw new Error('Element not found for PDF export');
   }
 
-  const html2pdf = (await import('html2pdf.js')).default;
+  // Sanitize the HTML content before processing
+  const sanitizedHTML = DOMPurify.sanitize(element.innerHTML, {
+    USE_PROFILES: { html: true },
+    FORBID_TAGS: ['script', 'object', 'embed', 'link', 'style'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
+  });
   
-  const opt = {
-    margin: 0,
-    filename: `${filename}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { 
-      scale: 2, 
-      useCORS: true,
-      letterRendering: true,
-    },
-    jsPDF: { 
-      unit: 'mm', 
-      format: 'a4', 
-      orientation: 'portrait' 
-    },
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-  };
+  // Create a temporary container with sanitized content
+  const tempContainer = document.createElement('div');
+  tempContainer.innerHTML = sanitizedHTML;
+  tempContainer.style.position = 'absolute';
+  tempContainer.style.left = '-9999px';
+  tempContainer.style.top = '0';
+  document.body.appendChild(tempContainer);
 
-  html2pdf().set(opt).from(element).save();
+  try {
+    // Capture the element as canvas
+    const canvas = await html2canvas(tempContainer, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+    });
+
+    // Create PDF with A4 dimensions
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+    const imgY = 0;
+
+    pdf.addImage(imgData, 'JPEG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+    pdf.save(`${filename}.pdf`);
+  } finally {
+    // Clean up temporary container
+    document.body.removeChild(tempContainer);
+  }
 };
 
 // Export to Word document
