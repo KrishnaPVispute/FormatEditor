@@ -11,7 +11,6 @@ import { toast } from "@/hooks/use-toast";
 import TextSection, { TextItem } from "@/components/TextSection";
 import TableSection, { TableData } from "@/components/TableSection";
 import MixedSection, { MixedItem } from "@/components/MixedSection";
-import HeadingTableSection, { HeadingTableItem } from "@/components/HeadingTableSection";
 import TemplatePreview, { TEMPLATES, TemplateInfo } from "@/components/TemplatePreview";
 import { exportToPDF, exportToWord, ExportData } from "@/utils/exportUtils";
 import { Save, Wand2, FileDown, FileText } from "lucide-react";
@@ -23,21 +22,17 @@ const Index = () => {
   // Section 1: Text only
   const [textItems, setTextItems] = useState<TextItem[]>([]);
 
-  // Section 2: Table only
+  // Section 2: Table only (with optional header)
   const [tableData, setTableData] = useState<TableData>({ rows: [] });
 
   // Section 3: Mixed content
   const [mixedItems, setMixedItems] = useState<MixedItem[]>([]);
-
-  // Section 4: Heading + Table
-  const [headingTableItems, setHeadingTableItems] = useState<HeadingTableItem[]>([]);
 
   const handleSave = () => {
     const savedData = {
       section1: textItems,
       section2: tableData,
       section3: mixedItems,
-      section4: headingTableItems,
       savedAt: new Date().toISOString(),
     };
 
@@ -135,10 +130,6 @@ const Index = () => {
           content: item.content,
           tableData: item.tableData,
         })),
-        headingTableItems: headingTableItems.map(item => ({
-          heading: item.heading,
-          tableData: item.tableData,
-        })),
       };
 
       await exportToWord(exportData, `${generatedTemplate.name}_Report`);
@@ -217,7 +208,6 @@ const Index = () => {
             <TextSection items={textItems} onChange={setTextItems} />
             <TableSection data={tableData} onChange={setTableData} />
             <MixedSection items={mixedItems} onChange={setMixedItems} />
-            <HeadingTableSection items={headingTableItems} onChange={setHeadingTableItems} />
 
             {/* Save Button */}
             <div className="flex justify-center pt-4">
@@ -241,7 +231,6 @@ const Index = () => {
               textItems={textItems}
               tableData={tableData}
               mixedItems={mixedItems}
-              headingTableItems={headingTableItems}
             />
           </div>
         </div>

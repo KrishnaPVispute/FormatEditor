@@ -1,13 +1,12 @@
 import { saveAs } from 'file-saver';
-import { Document, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Header, Footer, ImageRun, Packer } from 'docx';
+import { Document, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, Packer } from 'docx';
 
 export interface ExportData {
   template: string;
   patientName: string;
   textItems: Array<{ type: string; content: string }>;
-  tableData: { rows: string[][] };
+  tableData: { header?: string; rows: string[][] };
   mixedItems: Array<{ type: string; content: string; tableData?: { rows: string[][] } }>;
-  headingTableItems: Array<{ heading: string; tableData: { rows: string[][] } }>;
 }
 
 // Export to PDF using html2pdf
@@ -18,7 +17,6 @@ export const exportToPDF = async (elementId: string, filename: string) => {
     return;
   }
 
-  // Dynamic import for html2pdf
   const html2pdf = (await import('html2pdf.js')).default;
   
   const opt = {
@@ -161,13 +159,13 @@ export const exportToWord = async (data: ExportData, filename: string) => {
     });
   }
 
-  // Section 2: Table
+  // Section 2: Table with optional header
   if (data.tableData.rows.length > 0) {
     children.push(
       new Paragraph({
         children: [
           new TextRun({
-            text: isLCA ? 'Total Expenditures' : 'Summary Cost Projection Tables',
+            text: data.tableData.header || (isLCA ? 'Total Expenditures' : 'Summary Cost Projection Tables'),
             bold: true,
             size: 28,
             color: headerColor,
@@ -281,58 +279,6 @@ export const exportToWord = async (data: ExportData, filename: string) => {
     });
   }
 
-  // Section 4: Heading Tables
-  if (data.headingTableItems.length > 0) {
-    data.headingTableItems.forEach((item) => {
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: item.heading || '[Table Heading]',
-              bold: true,
-              size: 26,
-              color: headerColor,
-              font: 'Times New Roman',
-            }),
-          ],
-          spacing: { before: 400, after: 200 },
-        })
-      );
-
-      const tableRows = item.tableData.rows.map((row, rowIndex) =>
-        new TableRow({
-          children: row.map((cell) =>
-            new TableCell({
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: cell || '-',
-                      bold: rowIndex === 0,
-                      size: 20,
-                      color: rowIndex === 0 ? 'FFFFFF' : '000000',
-                      font: 'Times New Roman',
-                    }),
-                  ],
-                }),
-              ],
-              shading: {
-                fill: rowIndex === 0 ? headerColor : (rowIndex % 2 === 0 ? (isLCA ? 'FFF5E6' : 'E6F0FA') : 'FFFFFF'),
-              },
-            })
-          ),
-        })
-      );
-
-      children.push(
-        new Table({
-          rows: tableRows,
-          width: { size: 100, type: WidthType.PERCENTAGE },
-        })
-      );
-    });
-  }
-
   // Confidentiality notice
   children.push(
     new Paragraph({
@@ -354,8 +300,8 @@ export const exportToWord = async (data: ExportData, filename: string) => {
         properties: {
           page: {
             size: {
-              width: 11906, // A4 width in twips
-              height: 16838, // A4 height in twips
+              width: 11906,
+              height: 16838,
             },
             margin: {
               top: 1440,

@@ -1,10 +1,11 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, Trash2, Calculator } from "lucide-react";
+import { Plus, Minus, Trash2, Calculator, Type } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getDisplayValue } from "@/utils/tableFormulas";
 
 export interface TableData {
+  header?: string;
   rows: string[][];
 }
 
@@ -17,23 +18,23 @@ const TableSection = ({ data, onChange }: TableSectionProps) => {
   const addRow = () => {
     const colCount = data.rows[0]?.length || 3;
     const newRow = Array(colCount).fill("");
-    onChange({ rows: [...data.rows, newRow] });
+    onChange({ ...data, rows: [...data.rows, newRow] });
   };
 
   const removeRow = (rowIndex: number) => {
     if (data.rows.length <= 1) return;
-    onChange({ rows: data.rows.filter((_, i) => i !== rowIndex) });
+    onChange({ ...data, rows: data.rows.filter((_, i) => i !== rowIndex) });
   };
 
   const addColumn = () => {
     const newRows = data.rows.map((row) => [...row, ""]);
-    onChange({ rows: newRows });
+    onChange({ ...data, rows: newRows });
   };
 
   const removeColumn = (colIndex: number) => {
     if (data.rows[0]?.length <= 1) return;
     const newRows = data.rows.map((row) => row.filter((_, i) => i !== colIndex));
-    onChange({ rows: newRows });
+    onChange({ ...data, rows: newRows });
   };
 
   const updateCell = (rowIndex: number, colIndex: number, value: string) => {
@@ -42,7 +43,20 @@ const TableSection = ({ data, onChange }: TableSectionProps) => {
         ? row.map((cell, ci) => (ci === colIndex ? value : cell))
         : row
     );
-    onChange({ rows: newRows });
+    onChange({ ...data, rows: newRows });
+  };
+
+  const updateHeader = (value: string) => {
+    onChange({ ...data, header: value });
+  };
+
+  const toggleHeader = () => {
+    if (data.header !== undefined) {
+      const { header, ...rest } = data;
+      onChange({ ...rest, rows: data.rows });
+    } else {
+      onChange({ ...data, header: "" });
+    }
   };
 
   const initializeTable = () => {
@@ -55,7 +69,6 @@ const TableSection = ({ data, onChange }: TableSectionProps) => {
     });
   };
 
-  // Check if cell contains a formula
   const isFormula = (value: string) => value.trim().startsWith('=');
 
   return (
@@ -70,7 +83,7 @@ const TableSection = ({ data, onChange }: TableSectionProps) => {
                   <Calculator className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
+              <TooltipContent className="max-w-xs bg-popover">
                 <p className="font-semibold mb-1">Formula Support:</p>
                 <ul className="text-xs space-y-1">
                   <li>=SUM(A1,A2,A3) or =SUM(A1:A3)</li>
@@ -83,6 +96,15 @@ const TableSection = ({ data, onChange }: TableSectionProps) => {
           </TooltipProvider>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant={data.header !== undefined ? "default" : "outline"} 
+            size="sm" 
+            onClick={toggleHeader} 
+            className="flex items-center gap-1"
+          >
+            <Type className="h-4 w-4" />
+            Header
+          </Button>
           <Button variant="outline" size="sm" onClick={addRow} className="flex items-center gap-1">
             <Plus className="h-4 w-4" />
             Row
@@ -95,6 +117,16 @@ const TableSection = ({ data, onChange }: TableSectionProps) => {
       </div>
 
       <div className="min-h-[100px] border border-input bg-background p-4 overflow-x-auto">
+        {data.header !== undefined && (
+          <input
+            type="text"
+            value={data.header}
+            onChange={(e) => updateHeader(e.target.value)}
+            placeholder="Enter table header..."
+            className="w-full text-xl font-bold bg-transparent border-b border-input focus:border-primary focus:outline-none py-2 mb-4 text-foreground placeholder:text-muted-foreground"
+          />
+        )}
+        
         {data.rows.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">No table created yet.</p>
@@ -124,7 +156,7 @@ const TableSection = ({ data, onChange }: TableSectionProps) => {
                               />
                             </TooltipTrigger>
                             {hasFormula && (
-                              <TooltipContent>
+                              <TooltipContent className="bg-popover">
                                 <p>Result: {displayValue}</p>
                               </TooltipContent>
                             )}
