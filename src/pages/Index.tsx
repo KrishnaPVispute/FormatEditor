@@ -13,7 +13,7 @@ import TableSection, { TableData } from "@/components/TableSection";
 import MixedSection, { MixedItem } from "@/components/MixedSection";
 import TemplatePreview, { TEMPLATES, TemplateInfo } from "@/components/TemplatePreview";
 import { exportToPDF, exportToWord, ExportData } from "@/utils/exportUtils";
-import { Save, Wand2, FileDown, FileText } from "lucide-react";
+import { Save, Wand2, FileDown, FileText, Mail } from "lucide-react";
 
 const Index = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
@@ -146,6 +146,82 @@ const Index = () => {
     }
   };
 
+  const handleExportEmail = async () => {
+    if (!generatedTemplate) {
+      toast({
+        title: "No Template Generated",
+        description: "Please generate a template first before exporting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Opening Gmail",
+      description: "Your email client will open. Please attach the PDF manually after downloading.",
+    });
+
+    try {
+      // First generate the PDF
+      await exportToPDF('template-preview-content', `${generatedTemplate.name}_Report`);
+      
+      // Open Gmail compose with pre-filled subject and body
+      const subject = encodeURIComponent(`${generatedTemplate.name} Report - ${getPatientName()}`);
+      const body = encodeURIComponent(
+        `Please find attached the ${generatedTemplate.type === 'LCA' ? 'Life Care Analysis' : 'Life Care Plan'} report for ${getPatientName()}.\n\nBest regards`
+      );
+      
+      window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`, '_blank');
+      
+      toast({
+        title: "PDF Downloaded",
+        description: "Please attach the downloaded PDF to your email.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "There was an error preparing the email.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handlers for editable preview
+  const handleTextItemChange = (id: string, content: string) => {
+    setTextItems(items => items.map(item => 
+      item.id === id ? { ...item, content } : item
+    ));
+  };
+
+  const handleTableCellChange = (rowIndex: number, colIndex: number, value: string) => {
+    const newRows = tableData.rows.map((row, ri) =>
+      ri === rowIndex
+        ? row.map((cell, ci) => (ci === colIndex ? value : cell))
+        : row
+    );
+    setTableData({ ...tableData, rows: newRows });
+  };
+
+  const handleMixedItemChange = (id: string, content: string) => {
+    setMixedItems(items => items.map(item => 
+      item.id === id ? { ...item, content } : item
+    ));
+  };
+
+  const handleMixedTableCellChange = (id: string, rowIndex: number, colIndex: number, value: string) => {
+    setMixedItems(items => items.map(item => {
+      if (item.id === id && item.tableData) {
+        const newRows = item.tableData.rows.map((row, ri) =>
+          ri === rowIndex
+            ? row.map((cell, ci) => (ci === colIndex ? value : cell))
+            : row
+        );
+        return { ...item, tableData: { rows: newRows } };
+      }
+      return item;
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -195,6 +271,16 @@ const Index = () => {
                 <FileText className="h-4 w-4" />
                 Word
               </Button>
+
+              <Button 
+                onClick={handleExportEmail} 
+                variant="outline" 
+                className="flex items-center gap-2"
+                disabled={!generatedTemplate}
+              >
+                <Mail className="h-4 w-4" />
+                Email
+              </Button>
             </div>
           </div>
         </div>
@@ -231,6 +317,10 @@ const Index = () => {
               textItems={textItems}
               tableData={tableData}
               mixedItems={mixedItems}
+              onTextItemChange={handleTextItemChange}
+              onTableCellChange={handleTableCellChange}
+              onMixedItemChange={handleMixedItemChange}
+              onMixedTableCellChange={handleMixedTableCellChange}
             />
           </div>
         </div>
