@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { TextItem } from "./TextSection";
 import { TableData } from "./TableSection";
@@ -24,6 +25,10 @@ interface TemplatePreviewProps {
   textItems: TextItem[];
   tableData: TableData;
   mixedItems: MixedItem[];
+  onTextItemChange?: (id: string, content: string) => void;
+  onTableCellChange?: (rowIndex: number, colIndex: number, value: string) => void;
+  onMixedItemChange?: (id: string, content: string) => void;
+  onMixedTableCellChange?: (id: string, rowIndex: number, colIndex: number, value: string) => void;
 }
 
 // A4 dimensions in pixels at 96 DPI
@@ -31,7 +36,16 @@ const A4_WIDTH = 794;
 const A4_HEIGHT = 1123;
 const FONT_SIZE = "11px";
 
-const TemplatePreview = ({ template, textItems, tableData, mixedItems }: TemplatePreviewProps) => {
+const TemplatePreview = ({ 
+  template, 
+  textItems, 
+  tableData, 
+  mixedItems,
+  onTextItemChange,
+  onTableCellChange,
+  onMixedItemChange,
+  onMixedTableCellChange,
+}: TemplatePreviewProps) => {
   if (!template) {
     return (
       <Card className="p-8 bg-card min-h-[400px] flex flex-col items-center justify-center">
@@ -73,40 +87,76 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
     return textItems.map((item) => {
       if (item.type === "heading") {
         return (
-          <h2 
-            key={item.id} 
+          <input
+            key={item.id}
+            type="text"
+            value={item.content || ""}
+            onChange={(e) => onTextItemChange?.(item.id, e.target.value)}
+            placeholder="[Heading placeholder]"
             style={{ 
               ...baseTextStyle,
               fontWeight: 'bold',
               fontSize: '14px',
               marginBottom: '8px',
               color: '#000000',
+              width: '100%',
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
             }}
-          >
-            {item.content || "[Heading placeholder]"}
-          </h2>
+          />
         );
       }
       if (item.type === "text") {
         return (
-          <p key={item.id} style={{ ...baseTextStyle, marginBottom: '4px', color: '#000000' }}>
-            {item.content || "[Text line placeholder]"}
-          </p>
+          <input
+            key={item.id}
+            type="text"
+            value={item.content || ""}
+            onChange={(e) => onTextItemChange?.(item.id, e.target.value)}
+            placeholder="[Text line placeholder]"
+            style={{ 
+              ...baseTextStyle, 
+              marginBottom: '4px', 
+              color: '#000000',
+              width: '100%',
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+            }}
+          />
         );
       }
       return (
-        <p key={item.id} style={{ ...baseTextStyle, marginBottom: '12px', whiteSpace: 'pre-wrap', color: '#000000' }}>
-          {item.content || "[Paragraph placeholder]"}
-        </p>
+        <textarea
+          key={item.id}
+          value={item.content || ""}
+          onChange={(e) => onTextItemChange?.(item.id, e.target.value)}
+          placeholder="[Paragraph placeholder]"
+          rows={3}
+          style={{ 
+            ...baseTextStyle, 
+            marginBottom: '12px', 
+            whiteSpace: 'pre-wrap', 
+            color: '#000000',
+            width: '100%',
+            border: 'none',
+            background: 'transparent',
+            outline: 'none',
+            resize: 'vertical',
+          }}
+        />
       );
     });
   };
 
-  const renderTable = (rows: string[][], tableId?: string, tableHeader?: string) => {
+  const renderTable = (rows: string[][], tableId?: string, tableHeader?: string, isMainTable?: boolean, mixedItemId?: string) => {
     if (rows.length === 0) {
       return <p style={{ ...baseTextStyle, color: '#888', fontStyle: 'italic' }}>[No table data]</p>;
     }
     const tableHeaderColor = isLCA ? '#CC7900' : '#2E74B5';
+    const isFormula = (value: string) => value.trim().startsWith('=');
+    
     return (
       <div style={{ marginBottom: '16px' }}>
         {tableHeader && (
@@ -125,22 +175,62 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
             <tbody>
               {rows.map((row, ri) => (
                 <tr key={`${tableId || 'table'}-row-${ri}`}>
-                  {row.map((cell, ci) => (
-                    <td
-                      key={`${tableId || 'table'}-cell-${ri}-${ci}`}
-                      style={{
-                        border: '1px solid #ccc',
-                        padding: '6px 8px',
-                        backgroundColor: ri === 0 ? tableHeaderColor : (ri % 2 === 0 ? altRowColor : '#FFFFFF'),
-                        color: ri === 0 ? '#FFFFFF' : '#000000',
-                        fontWeight: ri === 0 ? 'bold' : 'normal',
-                        textAlign: ri === 0 ? 'center' : 'left',
-                        fontSize: FONT_SIZE,
-                      }}
-                    >
-                      {getDisplayValue(cell, rows) || "-"}
-                    </td>
-                  ))}
+                  {row.map((cell, ci) => {
+                    const displayValue = getDisplayValue(cell, rows);
+                    const hasFormula = isFormula(cell);
+                    return (
+                      <td
+                        key={`${tableId || 'table'}-cell-${ri}-${ci}`}
+                        style={{
+                          border: '1px solid #ccc',
+                          padding: '0',
+                          backgroundColor: ri === 0 ? tableHeaderColor : (ri % 2 === 0 ? altRowColor : '#FFFFFF'),
+                          color: ri === 0 ? '#FFFFFF' : '#000000',
+                          fontWeight: ri === 0 ? 'bold' : 'normal',
+                          textAlign: ri === 0 ? 'center' : 'left',
+                          fontSize: FONT_SIZE,
+                          position: 'relative',
+                        }}
+                        title={hasFormula ? `Formula: ${cell} = ${displayValue}` : undefined}
+                      >
+                        <input
+                          type="text"
+                          value={hasFormula ? displayValue : cell}
+                          onChange={(e) => {
+                            if (isMainTable) {
+                              onTableCellChange?.(ri, ci, e.target.value);
+                            } else if (mixedItemId) {
+                              onMixedTableCellChange?.(mixedItemId, ri, ci, e.target.value);
+                            }
+                          }}
+                          onFocus={(e) => {
+                            // Show formula when focused
+                            if (hasFormula) {
+                              e.target.value = cell;
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // Show result when blurred
+                            if (isFormula(e.target.value)) {
+                              e.target.value = getDisplayValue(e.target.value, rows);
+                            }
+                          }}
+                          placeholder="-"
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            border: 'none',
+                            background: 'transparent',
+                            color: hasFormula ? '#0066cc' : 'inherit',
+                            fontWeight: 'inherit',
+                            textAlign: 'inherit',
+                            fontSize: 'inherit',
+                            outline: 'none',
+                          }}
+                        />
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
@@ -154,29 +244,72 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
     return mixedItems.map((item) => {
       if (item.type === "heading") {
         return (
-          <h3 key={item.id} style={{ ...baseTextStyle, fontWeight: 'bold', fontSize: '13px', marginBottom: '6px', color: '#000000' }}>
-            {item.content || "[Heading]"}
-          </h3>
+          <input
+            key={item.id}
+            type="text"
+            value={item.content || ""}
+            onChange={(e) => onMixedItemChange?.(item.id, e.target.value)}
+            placeholder="[Heading]"
+            style={{ 
+              ...baseTextStyle, 
+              fontWeight: 'bold', 
+              fontSize: '13px', 
+              marginBottom: '6px', 
+              color: '#000000',
+              width: '100%',
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+            }}
+          />
         );
       }
       if (item.type === "text") {
         return (
-          <p key={item.id} style={{ ...baseTextStyle, marginBottom: '4px', color: '#000000' }}>
-            {item.content || "[Text]"}
-          </p>
+          <input
+            key={item.id}
+            type="text"
+            value={item.content || ""}
+            onChange={(e) => onMixedItemChange?.(item.id, e.target.value)}
+            placeholder="[Text]"
+            style={{ 
+              ...baseTextStyle, 
+              marginBottom: '4px', 
+              color: '#000000',
+              width: '100%',
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+            }}
+          />
         );
       }
       if (item.type === "paragraph") {
         return (
-          <p key={item.id} style={{ ...baseTextStyle, marginBottom: '12px', whiteSpace: 'pre-wrap', color: '#000000' }}>
-            {item.content || "[Paragraph]"}
-          </p>
+          <textarea
+            key={item.id}
+            value={item.content || ""}
+            onChange={(e) => onMixedItemChange?.(item.id, e.target.value)}
+            placeholder="[Paragraph]"
+            rows={3}
+            style={{ 
+              ...baseTextStyle, 
+              marginBottom: '12px', 
+              whiteSpace: 'pre-wrap', 
+              color: '#000000',
+              width: '100%',
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+              resize: 'vertical',
+            }}
+          />
         );
       }
       if (item.type === "table" && item.tableData) {
         return (
           <div key={item.id}>
-            {renderTable(item.tableData.rows, item.id)}
+            {renderTable(item.tableData.rows, item.id, undefined, false, item.id)}
           </div>
         );
       }
@@ -486,15 +619,15 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
     </div>
   );
 
-  // Render Content Pages
-  const renderContentPages = () => {
+  // Render a single content page with header and footer
+  const renderContentPage = (title: string, content: React.ReactNode, pageNumber: number) => {
     const tableHeaderColor = isLCA ? '#CC7900' : '#2E74B5';
     const logo = isLCA ? neilGhodadraLogo : paulGhattasLogo;
     const doctorName = isLCA ? 'NEIL GHODADRA, M.D.' : 'PAUL GHATTAS, D.O.';
     const reportType = isLCA ? 'Life Care Analysis (LCA)' : 'Life Care Plan (LCP)';
 
     return (
-      <div style={pageStyle}>
+      <div key={`page-${pageNumber}`} style={pageStyle}>
         {/* Page Header */}
         <div style={{ 
           padding: '20px 40px', 
@@ -518,76 +651,31 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
               {doctorName}
             </span>
           </div>
+          <span style={{ 
+            fontSize: '11px', 
+            color: '#666',
+            fontFamily: 'Times New Roman, serif',
+          }}>
+            Page {pageNumber}
+          </span>
         </div>
 
         {/* Content Area */}
-        <div style={{ padding: '30px 40px', overflow: 'hidden' }}>
-          {/* Section 1: Text Content */}
-          {textItems.length > 0 && (
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ 
-                fontSize: '16px', 
-                fontWeight: 'bold', 
-                color: tableHeaderColor,
-                fontFamily: 'Times New Roman, serif',
-                marginBottom: '12px',
-                borderBottom: `1px solid ${tableHeaderColor}`,
-                paddingBottom: '6px',
-              }}>
-                {isLCA ? "Life Care Analysis" : "Overview"}
-              </h2>
-              <div style={{ paddingLeft: '10px' }}>
-                {renderTextContent()}
-              </div>
-            </div>
-          )}
-
-          {/* Section 2: Table Data */}
-          {tableData.rows.length > 0 && (
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ 
-                fontSize: '16px', 
-                fontWeight: 'bold', 
-                color: tableHeaderColor,
-                fontFamily: 'Times New Roman, serif',
-                marginBottom: '12px',
-                borderBottom: `1px solid ${tableHeaderColor}`,
-                paddingBottom: '6px',
-              }}>
-                {tableData.header || (isLCA ? "Total Expenditures" : "Summary Cost Projection Tables")}
-              </h2>
-              <div style={{ paddingLeft: '10px' }}>
-                {renderTable(tableData.rows, 'main-table')}
-              </div>
-            </div>
-          )}
-
-          {/* Section 3: Mixed Content */}
-          {mixedItems.length > 0 && (
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ 
-                fontSize: '16px', 
-                fontWeight: 'bold', 
-                color: tableHeaderColor,
-                fontFamily: 'Times New Roman, serif',
-                marginBottom: '12px',
-                borderBottom: `1px solid ${tableHeaderColor}`,
-                paddingBottom: '6px',
-              }}>
-                {isLCA ? "Detailed Analysis" : "Future Medical Requirements"}
-              </h2>
-              <div style={{ paddingLeft: '10px' }}>
-                {renderMixedContent()}
-              </div>
-            </div>
-          )}
-
-          {/* Show placeholder if no content */}
-          {textItems.length === 0 && tableData.rows.length === 0 && mixedItems.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
-              <p style={baseTextStyle}>Add content in the sections on the left to populate this template.</p>
-            </div>
-          )}
+        <div style={{ padding: '30px 40px', overflow: 'hidden', minHeight: `${A4_HEIGHT - 200}px` }}>
+          <h2 style={{ 
+            fontSize: '16px', 
+            fontWeight: 'bold', 
+            color: tableHeaderColor,
+            fontFamily: 'Times New Roman, serif',
+            marginBottom: '12px',
+            borderBottom: `1px solid ${tableHeaderColor}`,
+            paddingBottom: '6px',
+          }}>
+            {title}
+          </h2>
+          <div style={{ paddingLeft: '10px' }}>
+            {content}
+          </div>
         </div>
 
         {/* Page Footer */}
@@ -619,13 +707,50 @@ const TemplatePreview = ({ template, textItems, tableData, mixedItems }: Templat
     );
   };
 
+  // Render separate pages for each section
+  const renderSectionPages = () => {
+    const pages: React.ReactNode[] = [];
+    let pageNumber = 2; // Start from page 2 (after cover page)
+
+    // Section 1: Text Content - New Page
+    if (textItems.length > 0) {
+      pages.push(renderContentPage(
+        isLCA ? "Life Care Analysis" : "Overview",
+        renderTextContent(),
+        pageNumber
+      ));
+      pageNumber++;
+    }
+
+    // Section 2: Table Data - New Page
+    if (tableData.rows.length > 0) {
+      pages.push(renderContentPage(
+        tableData.header || (isLCA ? "Total Expenditures" : "Summary Cost Projection Tables"),
+        renderTable(tableData.rows, 'main-table', undefined, true),
+        pageNumber
+      ));
+      pageNumber++;
+    }
+
+    // Section 3: Mixed Content - New Page
+    if (mixedItems.length > 0) {
+      pages.push(renderContentPage(
+        isLCA ? "Detailed Analysis" : "Future Medical Requirements",
+        renderMixedContent(),
+        pageNumber
+      ));
+    }
+
+    return pages;
+  };
+
   return (
     <div id="template-preview-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Page 1 - Cover Page */}
       {isLCA ? renderLCACoverPage() : renderLCPCoverPage()}
 
-      {/* Page 2+ - Content Pages (only if there's content) */}
-      {(textItems.length > 0 || tableData.rows.length > 0 || mixedItems.length > 0) && renderContentPages()}
+      {/* Separate pages for each section */}
+      {renderSectionPages()}
 
       {/* Template Info Footer */}
       <div style={{ 
