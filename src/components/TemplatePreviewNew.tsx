@@ -40,6 +40,7 @@ const A4_HEIGHT = 1123;
 const CONTENT_PADDING = 40;
 const HEADER_HEIGHT = 80;
 const FOOTER_HEIGHT = 60;
+const CONTENT_HEIGHT = A4_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - 80; // Available content height per page
 
 const TemplatePreviewNew = ({ 
   template, 
@@ -98,6 +99,7 @@ const TemplatePreviewNew = ({
   const pageStyle: React.CSSProperties = {
     width: `${A4_WIDTH}px`,
     minHeight: `${A4_HEIGHT}px`,
+    height: 'auto', // Allow pages to grow for content
     backgroundColor: '#FFFFFF',
     fontFamily: 'Times New Roman, serif',
     fontSize: '11px',
@@ -105,6 +107,7 @@ const TemplatePreviewNew = ({
     margin: '0 auto 16px auto',
     position: 'relative',
     pageBreakAfter: 'always',
+    pageBreakInside: 'avoid',
   };
 
   const renderTable = (
@@ -194,6 +197,10 @@ const TemplatePreviewNew = ({
     if (!item.text) return null;
     const text = item.text;
     
+    // Calculate approximate line count for auto-height
+    const lineCount = Math.max(1, Math.ceil((text.content.length * (text.fontSize / 11)) / 80));
+    const minHeight = Math.max(24, lineCount * (text.fontSize * 1.5));
+    
     return (
       <textarea
         value={text.content}
@@ -216,10 +223,16 @@ const TemplatePreviewNew = ({
           background: 'transparent',
           outline: 'none',
           resize: 'none',
-          minHeight: '24px',
+          minHeight: `${minHeight}px`,
           overflow: 'hidden',
+          lineHeight: '1.5',
         }}
-        rows={Math.max(1, (text.content.split('\n').length || 1))}
+        rows={Math.max(1, text.content.split('\n').length)}
+        onInput={(e) => {
+          const target = e.target as HTMLTextAreaElement;
+          target.style.height = 'auto';
+          target.style.height = `${target.scrollHeight}px`;
+        }}
       />
     );
   };
@@ -426,10 +439,11 @@ const TemplatePreviewNew = ({
           <span style={{ fontSize: '11px', color: '#666' }}>Page {pageNumber}</span>
         </div>
 
-        {/* Content Area - No fixed height, content flows naturally */}
+        {/* Content Area - Allow natural content flow for long content */}
         <div style={{ 
           padding: `${CONTENT_PADDING}px`, 
           minHeight: `${A4_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - 40}px`,
+          paddingBottom: `${FOOTER_HEIGHT + 20}px`, // Extra padding for footer
         }}>
           <h2 style={{ 
             fontSize: '16px', 
@@ -439,7 +453,7 @@ const TemplatePreviewNew = ({
             borderBottom: `1px solid ${themeColor}`,
             paddingBottom: '6px',
           }}>
-            Section {sectionIndex + 1}: {section?.title || `Content Block ${sectionIndex + 1}`}
+            {section?.title || `Section ${sectionIndex + 1}`}
           </h2>
           
           <div style={{ paddingLeft: '10px' }}>
