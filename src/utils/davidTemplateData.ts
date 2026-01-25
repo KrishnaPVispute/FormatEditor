@@ -1,12 +1,12 @@
 // Pre-extracted section data from 1937_LCP_David.pdf
-// This data is used to pre-populate the editor when the David template is selected
+// This data is used as default content for ALL templates - user can edit/delete
 
 import { Section, SectionItem, FormattedText } from "@/components/SectionEditor";
 
 const createTextItem = (content: string, fontSize: number = 11, isBold: boolean = false): SectionItem => ({
   id: crypto.randomUUID(),
   type: "text",
-  text: { content, fontSize, isBold }
+  text: { content, fontSize, isBold, isItalic: false, isUnderline: false, alignment: 'left' }
 });
 
 const createTableItem = (rows: string[][], header?: string): SectionItem => ({
@@ -15,7 +15,8 @@ const createTableItem = (rows: string[][], header?: string): SectionItem => ({
   tableData: { rows, header }
 });
 
-export const getDavidTemplateSections = (): Section[] => [
+// This is the DEFAULT data used for all templates - extracted from 1937_LCP_David
+export const getDefaultSectionData = (): Section[] => [
   {
     id: crypto.randomUUID(),
     title: "Executive Summary",
@@ -206,42 +207,24 @@ Ghattas is widely regarded as an expert in reconstructive and arthroscopic surge
   }
 ];
 
+// Alias for backward compatibility
+export const getDavidTemplateSections = getDefaultSectionData;
+
+// Empty sections for starting fresh
+export const getEmptySections = (): Section[] => [
+  { id: crypto.randomUUID(), title: "Executive Summary", items: [] },
+  { id: crypto.randomUUID(), title: "Summary of Medical Records", items: [] },
+  { id: crypto.randomUUID(), title: "Interview & History", items: [] },
+  { id: crypto.randomUUID(), title: "Review of Systems", items: [] },
+  { id: crypto.randomUUID(), title: "Medical & Social History", items: [] },
+  { id: crypto.randomUUID(), title: "Central Opinions", items: [] },
+  { id: crypto.randomUUID(), title: "Duration of Care", items: [] },
+  { id: crypto.randomUUID(), title: "Future Medical Requirements", items: [] },
+  { id: crypto.randomUUID(), title: "Cost Projection Tables", items: [] },
+  { id: crypto.randomUUID(), title: "Overview of Medical Expert", items: [] },
+];
+
+// Legacy function - now returns the default data for any template type
 export const getDefaultSections = (templateType: "LCA" | "LCP"): Section[] => {
-  if (templateType === "LCA") {
-    return [
-      {
-        id: crypto.randomUUID(),
-        title: "Life Care Analysis",
-        items: []
-      },
-      {
-        id: crypto.randomUUID(),
-        title: "Total Expenditures",
-        items: []
-      },
-      {
-        id: crypto.randomUUID(),
-        title: "Detailed Analysis",
-        items: []
-      }
-    ];
-  }
-  
-  return [
-    {
-      id: crypto.randomUUID(),
-      title: "Overview",
-      items: []
-    },
-    {
-      id: crypto.randomUUID(),
-      title: "Summary Cost Tables",
-      items: []
-    },
-    {
-      id: crypto.randomUUID(),
-      title: "Future Medical Requirements",
-      items: []
-    }
-  ];
+  return getDefaultSectionData();
 };

@@ -4,7 +4,10 @@ import { FileText } from "lucide-react";
 import { getDisplayValue } from "@/utils/tableFormulas";
 import neilGhodadraLogo from "@/assets/neil-ghodadra-logo.jpg";
 import paulGhattasLogo from "@/assets/paul-ghattas-logo.png";
-import { Section, SectionItem } from "./SectionEditor";
+import lcpDoctorProfile from "@/assets/lcp-doctor-profile.jpg";
+import paulGhattasProfile from "@/assets/paul-ghattas-profile.jpg";
+import neilGhodadraProfile from "@/assets/neil-ghodadra-profile.jpg";
+import { Section, SectionItem, FormattedText } from "./SectionEditor";
 
 export interface TemplateInfo {
   id: string;
@@ -37,7 +40,6 @@ const A4_HEIGHT = 1123;
 const CONTENT_PADDING = 40;
 const HEADER_HEIGHT = 80;
 const FOOTER_HEIGHT = 60;
-const CONTENT_HEIGHT = A4_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - (CONTENT_PADDING * 2);
 
 const TemplatePreviewNew = ({ 
   template, 
@@ -79,6 +81,13 @@ const TemplatePreviewNew = ({
     month: 'long', 
     day: 'numeric' 
   });
+
+  // Get the correct doctor profile image based on template
+  const getDoctorProfileImage = () => {
+    if (template.id === "neil-ghodadra-lca") return neilGhodadraProfile;
+    if (template.id === "paul-ghattas-lcp") return paulGhattasProfile;
+    return lcpDoctorProfile; // For david-gupte-lcp
+  };
 
   const baseTextStyle: React.CSSProperties = {
     fontFamily: 'Times New Roman, serif',
@@ -138,7 +147,7 @@ const TemplatePreviewNew = ({
                           border: '1px solid #ccc',
                           padding: '0',
                           backgroundColor: ri === 0 ? themeColor : (ri % 2 === 0 ? altRowColor : '#FFFFFF'),
-                          color: ri === 0 ? '#FFFFFF' : '#000000',
+                          color: ri === 0 ? '#FFFFFF' : (hasFormula ? '#0066cc' : '#000000'),
                           fontWeight: ri === 0 ? 'bold' : 'normal',
                           textAlign: ri === 0 ? 'center' : 'left',
                           fontSize: '11px',
@@ -162,7 +171,7 @@ const TemplatePreviewNew = ({
                             padding: '6px 8px',
                             border: 'none',
                             background: 'transparent',
-                            color: hasFormula ? '#0066cc' : 'inherit',
+                            color: 'inherit',
                             fontWeight: 'inherit',
                             textAlign: 'inherit',
                             fontSize: 'inherit',
@@ -183,18 +192,22 @@ const TemplatePreviewNew = ({
 
   const renderTextItem = (item: SectionItem, sectionIndex: number, itemIndex: number) => {
     if (!item.text) return null;
+    const text = item.text;
     
     return (
       <textarea
-        value={item.text.content}
+        value={text.content}
         onChange={(e) => onSectionChange(sectionIndex, itemIndex, {
-          text: { ...item.text!, content: e.target.value }
+          text: { ...text, content: e.target.value }
         })}
         placeholder="[Text placeholder]"
         style={{
           ...baseTextStyle,
-          fontSize: `${item.text.fontSize}px`,
-          fontWeight: item.text.isBold ? 'bold' : 'normal',
+          fontSize: `${text.fontSize}px`,
+          fontWeight: text.isBold ? 'bold' : 'normal',
+          fontStyle: text.isItalic ? 'italic' : 'normal',
+          textDecoration: text.isUnderline ? 'underline' : 'none',
+          textAlign: text.alignment || 'left',
           marginBottom: '12px',
           whiteSpace: 'pre-wrap',
           color: '#000000',
@@ -206,8 +219,33 @@ const TemplatePreviewNew = ({
           minHeight: '24px',
           overflow: 'hidden',
         }}
-        rows={Math.max(1, (item.text.content.split('\n').length || 1))}
+        rows={Math.max(1, (text.content.split('\n').length || 1))}
       />
+    );
+  };
+
+  // Render Doctor Profile Section (for Section 10)
+  const renderDoctorProfile = () => {
+    const profileImage = getDoctorProfileImage();
+    
+    return (
+      <div style={{ 
+        marginTop: '30px', 
+        padding: '20px', 
+        border: `1px solid ${themeColor}`,
+        borderRadius: '8px',
+      }}>
+        <img 
+          src={profileImage} 
+          alt="Doctor Profile" 
+          style={{ 
+            width: '100%', 
+            maxHeight: '400px', 
+            objectFit: 'contain',
+            borderRadius: '4px',
+          }}
+        />
+      </div>
     );
   };
 
@@ -355,7 +393,8 @@ const TemplatePreviewNew = ({
   const renderContentPage = (
     sectionIndex: number, 
     pageNumber: number, 
-    content: React.ReactNode
+    content: React.ReactNode,
+    isLastSection: boolean = false
   ) => {
     const logo = isLCA ? neilGhodadraLogo : paulGhattasLogo;
     const doctorName = isLCA ? 'NEIL GHODADRA, M.D.' : 'PAUL GHATTAS, D.O.';
@@ -390,7 +429,7 @@ const TemplatePreviewNew = ({
         {/* Content Area - No fixed height, content flows naturally */}
         <div style={{ 
           padding: `${CONTENT_PADDING}px`, 
-          minHeight: `${CONTENT_HEIGHT}px`,
+          minHeight: `${A4_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - 40}px`,
         }}>
           <h2 style={{ 
             fontSize: '16px', 
@@ -406,6 +445,9 @@ const TemplatePreviewNew = ({
           <div style={{ paddingLeft: '10px' }}>
             {content}
           </div>
+
+          {/* Add doctor profile image at end of Section 10 */}
+          {isLastSection && sectionIndex === sections.length - 1 && renderDoctorProfile()}
         </div>
 
         {/* Page Footer */}
@@ -455,12 +497,14 @@ const TemplatePreviewNew = ({
     let pageNumber = 2;
 
     sections.forEach((section, sectionIndex) => {
-      if (section.items.length > 0) {
+      const isLastSection = sectionIndex === sections.length - 1;
+      if (section.items.length > 0 || isLastSection) {
         pages.push(
           renderContentPage(
             sectionIndex,
             pageNumber,
-            renderSectionContent(section, sectionIndex)
+            renderSectionContent(section, sectionIndex),
+            isLastSection
           )
         );
         pageNumber++;
