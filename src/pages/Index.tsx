@@ -12,7 +12,7 @@ import SectionEditor, { Section, SectionItem } from "@/components/SectionEditor"
 import TemplatePreviewNew, { TEMPLATES, TemplateInfo } from "@/components/TemplatePreviewNew";
 import { exportToPDF, exportToWord, ExportData } from "@/utils/exportUtils";
 import { getDefaultSectionData } from "@/utils/davidTemplateData";
-import { Save, Wand2, FileDown, FileText, Mail, Eye, Edit } from "lucide-react";
+import { Save, Wand2, FileDown, FileText, Mail, Eye, Edit, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "editor" | "preview";
@@ -23,6 +23,44 @@ const Index = () => {
   const [sections, setSections] = useState<Section[]>(getDefaultSectionData());
   const [activeSection, setActiveSection] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>("editor");
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Scroll detection for floating button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Keyboard shortcuts - using refs to avoid stale closures
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case 's':
+            e.preventDefault();
+            document.getElementById('save-btn')?.click();
+            break;
+          case 'p':
+            e.preventDefault();
+            document.getElementById('pdf-btn')?.click();
+            break;
+          case 'w':
+            e.preventDefault();
+            document.getElementById('word-btn')?.click();
+            break;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // When template changes, keep the same data but update styling
   useEffect(() => {
@@ -189,10 +227,10 @@ const Index = () => {
               <Button onClick={handleGenerate} disabled={!selectedTemplateId}>
                 <Wand2 className="h-4 w-4 mr-2" />Generate
               </Button>
-              <Button onClick={handleExportPDF} variant="outline" disabled={!generatedTemplate}>
+              <Button id="pdf-btn" onClick={handleExportPDF} variant="outline" disabled={!generatedTemplate}>
                 <FileDown className="h-4 w-4 mr-2" />PDF
               </Button>
-              <Button onClick={handleExportWord} variant="outline" disabled={!generatedTemplate}>
+              <Button id="word-btn" onClick={handleExportWord} variant="outline" disabled={!generatedTemplate}>
                 <FileText className="h-4 w-4 mr-2" />Word
               </Button>
               <Button onClick={handleExportEmail} variant="outline" disabled={!generatedTemplate}>
@@ -244,7 +282,7 @@ const Index = () => {
             </button>
           </div>
           
-          <Button onClick={handleSave} variant="ghost" size="sm" className="ml-4">
+          <Button id="save-btn" onClick={handleSave} variant="ghost" size="sm" className="ml-4">
             <Save className="h-4 w-4 mr-2" />Save
           </Button>
         </div>
@@ -277,6 +315,20 @@ const Index = () => {
           </div>
         )}
       </main>
+
+      {/* Floating Scroll-to-Top Button */}
+      <button
+        onClick={scrollToTop}
+        className={cn(
+          "fixed bottom-6 right-6 z-50 p-3 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl",
+          showScrollTop 
+            ? "opacity-100 translate-y-0" 
+            : "opacity-0 translate-y-4 pointer-events-none"
+        )}
+        aria-label="Scroll to top"
+      >
+        <ArrowUp className="h-5 w-5" />
+      </button>
     </div>
   );
 };
