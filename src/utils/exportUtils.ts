@@ -4,6 +4,8 @@ import DOMPurify from 'dompurify';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { getDisplayValue } from './tableFormulas';
+import neilGhodadraLogo from '@/assets/neil-ghodadra-logo.jpg';
+import paulGhattasLogo from '@/assets/paul-ghattas-logo.png';
 
 export interface FormattedTextExport {
   content: string;
@@ -71,18 +73,55 @@ export const exportToPDF = async (elementId: string, filename: string) => {
     // Clone the page for rendering
     const clonedPage = page.cloneNode(true) as HTMLElement;
     
+    // Fix table alignment - ensure proper table cell styling
+    const tables = clonedPage.querySelectorAll('table');
+    tables.forEach((table) => {
+      table.style.tableLayout = 'fixed';
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      
+      const cells = table.querySelectorAll('td, th');
+      cells.forEach((cell) => {
+        const cellEl = cell as HTMLElement;
+        cellEl.style.overflow = 'hidden';
+        cellEl.style.textOverflow = 'ellipsis';
+        cellEl.style.wordWrap = 'break-word';
+        cellEl.style.verticalAlign = 'middle';
+        cellEl.style.boxSizing = 'border-box';
+      });
+    });
+    
     // Remove input elements and replace with their values for clean capture
     const inputs = clonedPage.querySelectorAll('input, textarea');
     inputs.forEach((input) => {
       const el = input as HTMLInputElement | HTMLTextAreaElement;
+      const parentCell = el.closest('td');
       const span = document.createElement('span');
       span.textContent = el.value || el.placeholder || '';
-      span.style.cssText = window.getComputedStyle(el).cssText;
+      
+      // Copy computed styles but ensure proper containment
+      const computedStyle = window.getComputedStyle(el);
+      span.style.fontFamily = computedStyle.fontFamily;
+      span.style.fontSize = computedStyle.fontSize;
+      span.style.fontWeight = computedStyle.fontWeight;
+      span.style.color = computedStyle.color;
+      span.style.textAlign = computedStyle.textAlign;
+      span.style.display = 'block';
+      span.style.padding = '6px 8px';
+      span.style.margin = '0';
       span.style.border = 'none';
       span.style.background = 'transparent';
-      span.style.display = 'inline-block';
       span.style.whiteSpace = 'pre-wrap';
       span.style.wordBreak = 'break-word';
+      span.style.overflow = 'hidden';
+      span.style.lineHeight = '1.4';
+      
+      // Ensure table cells contain text properly
+      if (parentCell) {
+        parentCell.style.padding = '0';
+        parentCell.style.overflow = 'hidden';
+      }
+      
       el.parentNode?.replaceChild(span, el);
     });
 
@@ -140,6 +179,19 @@ const tableBorders: ITableCellBorders = {
   right: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' },
 };
 
+// Helper function to fetch image as base64
+const fetchImageAsBase64 = async (imageSrc: string): Promise<Uint8Array> => {
+  try {
+    const response = await fetch(imageSrc);
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    return new Uint8Array(arrayBuffer);
+  } catch (error) {
+    console.error('Error fetching image:', error);
+    throw error;
+  }
+};
+
 // Export to Word document - matches the template preview exactly
 export const exportToWord = async (data: ExportData, filename: string) => {
   const isLCA = data.template.includes('LCA');
@@ -155,7 +207,36 @@ export const exportToWord = async (data: ExportData, filename: string) => {
   
   const children: (Paragraph | Table)[] = [];
 
+  // Fetch the logo image
+  const logoSrc = isLCA ? neilGhodadraLogo : paulGhattasLogo;
+  let logoImageData: Uint8Array | null = null;
+  try {
+    logoImageData = await fetchImageAsBase64(logoSrc);
+  } catch (error) {
+    console.warn('Could not load logo for Word export:', error);
+  }
+
   // ============= COVER PAGE =============
+  // Logo Image
+  if (logoImageData) {
+    children.push(
+      new Paragraph({
+        children: [
+          new ImageRun({
+            data: logoImageData,
+            transformation: {
+              width: 150,
+              height: 100,
+            },
+            type: isLCA ? 'jpg' : 'png',
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 400, after: 200 },
+      })
+    );
+  }
+
   // Doctor Name / Title
   children.push(
     new Paragraph({
@@ -169,7 +250,7 @@ export const exportToWord = async (data: ExportData, filename: string) => {
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 800, after: 200 },
+      spacing: { before: logoImageData ? 200 : 800, after: 200 },
     })
   );
 

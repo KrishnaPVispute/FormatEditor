@@ -203,13 +203,13 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Animated Toggle View Buttons */}
-      <div className="bg-muted border-b border-border">
+      {/* Sticky Animated Toggle View Buttons */}
+      <div className="bg-muted/95 backdrop-blur-sm border-b border-border sticky top-[73px] z-30 shadow-sm">
         <div className="container mx-auto px-4 py-3 flex items-center justify-center gap-4">
           <div className="relative bg-background rounded-full p-1 flex items-center shadow-inner border border-border">
             {/* Animated sliding background */}
             <div 
-              className="absolute h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary rounded-full transition-all duration-300 ease-in-out shadow-lg"
+              className="absolute h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary rounded-full transition-all duration-500 ease-[cubic-bezier(0.68,-0.55,0.265,1.55)] shadow-lg"
               style={{ 
                 left: viewMode === "editor" ? "4px" : "calc(50% + 2px)",
               }}
@@ -219,11 +219,13 @@ const Index = () => {
             <button
               onClick={() => setViewMode("editor")}
               className={cn(
-                "relative z-10 flex items-center gap-2 px-6 py-2 rounded-full font-medium transition-colors duration-300",
-                viewMode === "editor" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                "relative z-10 flex items-center gap-2 px-6 py-2 rounded-full font-medium transition-all duration-300",
+                viewMode === "editor" 
+                  ? "text-primary-foreground scale-105" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Edit className="h-4 w-4" />
+              <Edit className={cn("h-4 w-4 transition-transform duration-300", viewMode === "editor" && "rotate-12")} />
               Section Editor
             </button>
             
@@ -231,11 +233,13 @@ const Index = () => {
             <button
               onClick={() => setViewMode("preview")}
               className={cn(
-                "relative z-10 flex items-center gap-2 px-6 py-2 rounded-full font-medium transition-colors duration-300",
-                viewMode === "preview" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                "relative z-10 flex items-center gap-2 px-6 py-2 rounded-full font-medium transition-all duration-300",
+                viewMode === "preview" 
+                  ? "text-primary-foreground scale-105" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Eye className="h-4 w-4" />
+              <Eye className={cn("h-4 w-4 transition-transform duration-300", viewMode === "preview" && "scale-110")} />
               Template Preview
             </button>
           </div>
