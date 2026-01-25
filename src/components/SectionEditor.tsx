@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
+import { Plus, Trash2, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getDisplayValue } from "@/utils/tableFormulas";
+import { Input } from "@/components/ui/input";
 
 export interface FormattedText {
   content: string;
@@ -49,6 +50,34 @@ const SectionEditor = ({
   templateType = "LCP"
 }: SectionEditorProps) => {
   const themeColor = templateType === "LCA" ? "#CC7900" : "#2E74B5";
+  const [editingTitleIndex, setEditingTitleIndex] = useState<number | null>(null);
+  const [editingTitleValue, setEditingTitleValue] = useState("");
+  
+  // Track which cells are in "edit mode" (showing formula) vs "display mode" (showing result)
+  const [editingCells, setEditingCells] = useState<Record<string, boolean>>({});
+
+  // Auto-resize textarea helper
+  const autoResizeTextarea = useCallback((textarea: HTMLTextAreaElement) => {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.max(150, textarea.scrollHeight)}px`;
+  }, []);
+
+  // Start editing section title
+  const startEditingTitle = (index: number) => {
+    setEditingTitleIndex(index);
+    setEditingTitleValue(sections[index].title);
+  };
+
+  // Save section title
+  const saveTitle = () => {
+    if (editingTitleIndex !== null && editingTitleValue.trim()) {
+      const newSections = [...sections];
+      newSections[editingTitleIndex] = { ...newSections[editingTitleIndex], title: editingTitleValue.trim() };
+      onChange(newSections);
+    }
+    setEditingTitleIndex(null);
+    setEditingTitleValue("");
+  };
 
   const updateSection = (index: number, updatedSection: Section) => {
     const newSections = [...sections];
@@ -276,14 +305,21 @@ const SectionEditor = ({
           </Button>
         </div>
         
-        {/* Text Area - Large and easy to use */}
+        {/* Text Area - Auto-resize based on content */}
         <textarea
           value={text.content}
-          onChange={(e) => updateItem(sectionIndex, item.id, { 
-            text: { ...text, content: e.target.value } 
-          })}
+          onChange={(e) => {
+            updateItem(sectionIndex, item.id, { 
+              text: { ...text, content: e.target.value } 
+            });
+            autoResizeTextarea(e.target);
+          }}
+          onFocus={(e) => autoResizeTextarea(e.target)}
+          ref={(el) => {
+            if (el) autoResizeTextarea(el);
+          }}
           placeholder="Start typing here... (Like Microsoft Word)"
-          className="w-full bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none p-4 text-foreground placeholder:text-muted-foreground rounded-md resize-none"
+          className="w-full bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none p-4 text-foreground placeholder:text-muted-foreground rounded-md resize-none overflow-hidden"
           style={{ 
             fontSize: `${text.fontSize}px`,
             fontWeight: text.isBold ? 'bold' : 'normal',
@@ -302,6 +338,38 @@ const SectionEditor = ({
     if (!item.tableData) return null;
     const rows = item.tableData.rows;
     const isFormula = (value: string) => value.trim().startsWith('=');
+    
+    // Get cell key for tracking edit state
+    const getCellKey = (itemId: string, ri: number, ci: number) => `${itemId}-${ri}-${ci}`;
+    
+    const handleCellKeyDown = (
+      e: React.KeyboardEvent<HTMLInputElement>, 
+      itemId: string, 
+      ri: number, 
+      ci: number, 
+      cellValue: string
+    ) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const cellKey = getCellKey(itemId, ri, ci);
+        // If it's a formula, switch to display mode
+        if (isFormula(cellValue)) {
+          setEditingCells(prev => ({ ...prev, [cellKey]: false }));
+        }
+        // Move to next cell or blur
+        (e.target as HTMLInputElement).blur();
+      }
+    };
+    
+    const handleCellFocus = (itemId: string, ri: number, ci: number) => {
+      const cellKey = getCellKey(itemId, ri, ci);
+      setEditingCells(prev => ({ ...prev, [cellKey]: true }));
+    };
+    
+    const handleCellBlur = (itemId: string, ri: number, ci: number) => {
+      const cellKey = getCellKey(itemId, ri, ci);
+      setEditingCells(prev => ({ ...prev, [cellKey]: false }));
+    };
     
     return (
       <div className="group bg-card border border-border rounded-lg p-4 shadow-sm">
@@ -335,7 +403,7 @@ const SectionEditor = ({
         
         {/* Formula Help */}
         <div className="mb-3 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
-          <strong>Formulas:</strong> Use Excel-like syntax: <code className="bg-muted px-1 rounded">=SUM(A2:A5)</code>, <code className="bg-muted px-1 rounded">=SUB(B2,B3)</code>, <code className="bg-muted px-1 rounded">=MUL(C2:C4)</code>, <code className="bg-muted px-1 rounded">=DIV(D2,D3)</code>
+          <strong>Formulas:</strong> Type formula → press <kbd className="bg-muted px-1 rounded border">Enter</kbd> to calculate. Examples: <code className="bg-muted px-1 rounded">=SUM(A2:A5)</code>, <code className="bg-muted px-1 rounded">=SUB(B2,B3)</code>, <code className="bg-muted px-1 rounded">=MUL(C2:C4)</code>, <code className="bg-muted px-1 rounded">=DIV(D2,D3)</code>
         </div>
         
         <div className="overflow-x-auto">
@@ -346,6 +414,11 @@ const SectionEditor = ({
                   {row.map((cell, ci) => {
                     const displayValue = getDisplayValue(cell, rows);
                     const hasFormula = isFormula(cell);
+                    const cellKey = getCellKey(item.id, ri, ci);
+                    const isEditing = editingCells[cellKey];
+                    
+                    // Show formula when editing, show result when not editing
+                    const showValue = hasFormula && !isEditing ? displayValue : cell;
                     
                     return (
                       <td 
@@ -357,21 +430,19 @@ const SectionEditor = ({
                       >
                         <input
                           type="text"
-                          value={cell}
+                          value={showValue}
                           onChange={(e) => updateTableCell(sectionIndex, item.id, ri, ci, e.target.value)}
+                          onKeyDown={(e) => handleCellKeyDown(e, item.id, ri, ci, cell)}
+                          onFocus={() => handleCellFocus(item.id, ri, ci)}
+                          onBlur={() => handleCellBlur(item.id, ri, ci)}
                           className={cn(
                             "w-full p-3 bg-transparent focus:outline-none focus:bg-accent/50 min-w-[100px]",
                             ri === 0 ? "text-white font-semibold text-center" : "text-foreground",
-                            hasFormula && "text-primary font-medium"
+                            hasFormula && !isEditing && "text-primary font-medium"
                           )}
                           placeholder={ri === 0 ? "Header" : "..."}
-                          title={hasFormula ? `Formula: ${cell} = ${displayValue}` : undefined}
+                          title={hasFormula ? `Formula: ${cell}` : undefined}
                         />
-                        {hasFormula && (
-                          <span className="absolute bottom-1 right-1 text-[10px] text-primary opacity-70">
-                            ={displayValue}
-                          </span>
-                        )}
                       </td>
                     );
                   })}
@@ -399,35 +470,80 @@ const SectionEditor = ({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Section Tabs */}
+      {/* Section Tabs - Editable Names */}
       <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-t-lg border border-border border-b-0">
         {sections.map((sec, index) => (
-          <Button
-            key={sec.id}
-            variant={activeSection === index ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onActiveSectionChange(index)}
-            className={cn(
-              "transition-all duration-200 font-medium",
-              activeSection === index && "shadow-md"
+          <div key={sec.id} className="relative group">
+            {editingTitleIndex === index ? (
+              <Input
+                value={editingTitleValue}
+                onChange={(e) => setEditingTitleValue(e.target.value)}
+                onBlur={saveTitle}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveTitle();
+                  if (e.key === 'Escape') {
+                    setEditingTitleIndex(null);
+                    setEditingTitleValue("");
+                  }
+                }}
+                autoFocus
+                className="h-9 w-32 text-sm"
+              />
+            ) : (
+              <Button
+                variant={activeSection === index ? "default" : "ghost"}
+                size="sm"
+                onClick={() => onActiveSectionChange(index)}
+                className={cn(
+                  "transition-all duration-300 font-medium pr-8",
+                  activeSection === index && "shadow-md"
+                )}
+                style={activeSection === index ? { backgroundColor: themeColor } : {}}
+              >
+                {sec.title}
+              </Button>
             )}
-            style={activeSection === index ? { backgroundColor: themeColor } : {}}
-          >
-            {index + 1}. {sec.title.length > 15 ? sec.title.slice(0, 15) + '...' : sec.title}
-          </Button>
+            {/* Edit button - appears on hover */}
+            {editingTitleIndex !== index && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEditingTitle(index);
+                }}
+                className={cn(
+                  "absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity",
+                  activeSection === index 
+                    ? "text-white/70 hover:text-white hover:bg-white/20" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+                title="Edit section name"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         ))}
       </div>
 
       {/* Active Section Content - Full height, no scroll box */}
       <Card className="flex-1 rounded-t-none border-t-0 overflow-visible">
         <div className="p-6">
-          {/* Section Title */}
-          <h2 
-            className="text-xl font-bold mb-6 pb-3 border-b-2"
-            style={{ borderColor: themeColor, color: themeColor }}
-          >
-            Section {activeSection + 1}: {section?.title || "Untitled"}
-          </h2>
+          {/* Section Title - Editable */}
+          <div className="flex items-center gap-3 mb-6 pb-3 border-b-2" style={{ borderColor: themeColor }}>
+            <h2 
+              className="text-xl font-bold"
+              style={{ color: themeColor }}
+            >
+              {section?.title || "Untitled"}
+            </h2>
+            <button
+              onClick={() => startEditingTitle(activeSection)}
+              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Edit section name"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          </div>
           
           {/* Add Item Buttons */}
           <div className="flex gap-3 mb-6">

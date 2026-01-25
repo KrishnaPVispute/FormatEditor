@@ -16,10 +16,11 @@ const createTableItem = (rows: string[][], header?: string): SectionItem => ({
 });
 
 // This is the DEFAULT data used for all templates - extracted from 1937_LCP_David
+// Section titles are now generic "Section 1, 2, 3..." - user can edit them
 export const getDefaultSectionData = (): Section[] => [
   {
     id: crypto.randomUUID(),
-    title: "Executive Summary",
+    title: "Section 1",
     items: [
       createTextItem("1.1 Executive Summary", 14, true),
       createTextItem(`This Life Care Plan (this "Report") has been prepared for Mr. David Gupte, a 38-year-old male, who sustained a lumbar disc bulges and cervical disc herniations, as a result of a Motor Vehicle incident on February 23, 2023.
@@ -33,7 +34,7 @@ According to the tenets, methods, and best practices advocated by the American A
   },
   {
     id: crypto.randomUUID(),
-    title: "Summary of Medical Records",
+    title: "Section 2",
     items: [
       createTextItem("2.1 Summary of Medical Records", 14, true),
       createTextItem("2.1.1 Sources", 12, true),
@@ -54,7 +55,7 @@ According to the tenets, methods, and best practices advocated by the American A
   },
   {
     id: crypto.randomUUID(),
-    title: "Interview & History",
+    title: "Section 3",
     items: [
       createTextItem("3.1 Recent History", 14, true),
       createTextItem("3.1.1 History of Present Injury/Illness", 12, true),
@@ -74,7 +75,7 @@ He reports ongoing pain in the neck and lower back, currently rated at 7 out of 
   },
   {
     id: crypto.randomUUID(),
-    title: "Review of Systems",
+    title: "Section 4",
     items: [
       createTextItem("3.3 Review of Systems", 14, true),
       createTextItem("3.3.1 Emotional Symptoms:", 12, true),
@@ -94,7 +95,7 @@ He reports ongoing pain in the neck and lower back, currently rated at 7 out of 
   },
   {
     id: crypto.randomUUID(),
-    title: "Medical & Social History",
+    title: "Section 5",
     items: [
       createTextItem("3.4 Past Medical History: Diabetes", 12, true),
       createTextItem("3.5 Past Surgical History: None noted.", 12, true),
@@ -113,7 +114,7 @@ He reports ongoing pain in the neck and lower back, currently rated at 7 out of 
   },
   {
     id: crypto.randomUUID(),
-    title: "Central Opinions",
+    title: "Section 6",
     items: [
       createTextItem("4.1 Diagnostic Conditions", 14, true),
       createTextItem(`For the purpose of Life Care Planning, a diagnostic condition can be defined as an impairment. The following represents my professional medical opinion regarding Mr. Gupte's diagnostic conditions:
@@ -134,7 +135,7 @@ He reports ongoing pain in the neck and lower back, currently rated at 7 out of 
   },
   {
     id: crypto.randomUUID(),
-    title: "Duration of Care",
+    title: "Section 7",
     items: [
       createTextItem("4.2.2 Probable Duration of Care", 14, true),
       createTextItem(`This formulation of Mr. Gupte's Probable Duration of Care has been prepared by me, Paul Ghattas, D.O., for the purpose of his Life Care Plan.
@@ -156,7 +157,7 @@ The methodology I have employed to formulate Mr. Gupte's Probable Duration of Ca
   },
   {
     id: crypto.randomUUID(),
-    title: "Future Medical Requirements",
+    title: "Section 8",
     items: [
       createTextItem("5. Future Medical Requirements", 14, true),
       createTextItem("5.1 Physician Services: See cost table"),
@@ -171,7 +172,7 @@ The methodology I have employed to formulate Mr. Gupte's Probable Duration of Ca
   },
   {
     id: crypto.randomUUID(),
-    title: "Cost Projection Tables",
+    title: "Section 9",
     items: [
       createTextItem("9. Summary Cost Projection Tables", 14, true),
       createTextItem("The below medical cost projections were developed through methodologies defined above."),
@@ -192,7 +193,7 @@ The methodology I have employed to formulate Mr. Gupte's Probable Duration of Ca
   },
   {
     id: crypto.randomUUID(),
-    title: "Overview of Medical Expert",
+    title: "Section 10",
     items: [
       createTextItem("10. Overview of Medical Expert", 14, true),
       createTextItem("Paul Ghattas, D.O.", 12, true),
@@ -210,18 +211,18 @@ Ghattas is widely regarded as an expert in reconstructive and arthroscopic surge
 // Alias for backward compatibility
 export const getDavidTemplateSections = getDefaultSectionData;
 
-// Empty sections for starting fresh
+// Empty sections for starting fresh - now with generic names
 export const getEmptySections = (): Section[] => [
-  { id: crypto.randomUUID(), title: "Executive Summary", items: [] },
-  { id: crypto.randomUUID(), title: "Summary of Medical Records", items: [] },
-  { id: crypto.randomUUID(), title: "Interview & History", items: [] },
-  { id: crypto.randomUUID(), title: "Review of Systems", items: [] },
-  { id: crypto.randomUUID(), title: "Medical & Social History", items: [] },
-  { id: crypto.randomUUID(), title: "Central Opinions", items: [] },
-  { id: crypto.randomUUID(), title: "Duration of Care", items: [] },
-  { id: crypto.randomUUID(), title: "Future Medical Requirements", items: [] },
-  { id: crypto.randomUUID(), title: "Cost Projection Tables", items: [] },
-  { id: crypto.randomUUID(), title: "Overview of Medical Expert", items: [] },
+  { id: crypto.randomUUID(), title: "Section 1", items: [] },
+  { id: crypto.randomUUID(), title: "Section 2", items: [] },
+  { id: crypto.randomUUID(), title: "Section 3", items: [] },
+  { id: crypto.randomUUID(), title: "Section 4", items: [] },
+  { id: crypto.randomUUID(), title: "Section 5", items: [] },
+  { id: crypto.randomUUID(), title: "Section 6", items: [] },
+  { id: crypto.randomUUID(), title: "Section 7", items: [] },
+  { id: crypto.randomUUID(), title: "Section 8", items: [] },
+  { id: crypto.randomUUID(), title: "Section 9", items: [] },
+  { id: crypto.randomUUID(), title: "Section 10", items: [] },
 ];
 
 // Legacy function - now returns the default data for any template type
