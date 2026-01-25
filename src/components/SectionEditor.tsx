@@ -335,9 +335,6 @@ const SectionEditor = ({
             lineHeight: '1.6',
           }}
         />
-        <p className="text-xs text-muted-foreground">
-          💡 Tip: Select text, then click Bold/Italic/Underline. You can also use Ctrl+B, Ctrl+I, Ctrl+U
-        </p>
       </div>
     );
   };
@@ -589,6 +586,13 @@ const SectionEditor = ({
               ))
             )}
           </div>
+          
+          {/* Single tip at the bottom of the section */}
+          {section?.items.some(item => item.type === "text") && (
+            <p className="text-xs text-muted-foreground mt-6 pt-4 border-t border-border">
+              💡 Tip: Select text, then click Bold/Italic/Underline to format. You can also use Ctrl+B, Ctrl+I, Ctrl+U
+            </p>
+          )}
         </div>
       </Card>
     </div>
