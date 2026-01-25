@@ -8,9 +8,9 @@ import { getDisplayValue } from "@/utils/tableFormulas";
 import { Input } from "@/components/ui/input";
 
 export interface FormattedText {
-  content: string;
+  content: string; // Now stores HTML content for rich text
   fontSize: number;
-  isBold: boolean;
+  isBold: boolean; // Legacy - kept for compatibility but not used for new rich text
   isItalic?: boolean;
   isUnderline?: boolean;
   alignment?: 'left' | 'center' | 'right' | 'justify';
@@ -174,9 +174,22 @@ const SectionEditor = ({
     }
   };
 
+  // Apply formatting to selected text using execCommand
+  const applyFormatting = (command: string) => {
+    document.execCommand(command, false);
+  };
+
   const renderTextItem = (sectionIndex: number, item: SectionItem) => {
     if (!item.text) return null;
     const text = item.text;
+    
+    // Handle content change from contentEditable
+    const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
+      const htmlContent = e.currentTarget.innerHTML;
+      updateItem(sectionIndex, item.id, { 
+        text: { ...text, content: htmlContent } 
+      });
+    };
     
     return (
       <div className="flex flex-col gap-3 group bg-card border border-border rounded-lg p-4 shadow-sm">
@@ -201,41 +214,44 @@ const SectionEditor = ({
           
           <div className="w-px h-6 bg-border mx-2" />
           
-          {/* Bold */}
+          {/* Bold - applies to selection */}
           <Button
-            variant={text.isBold ? "default" : "outline"}
+            variant="outline"
             size="icon"
             className="h-9 w-9"
-            onClick={() => updateItem(sectionIndex, item.id, { 
-              text: { ...text, isBold: !text.isBold } 
-            })}
-            title="Bold (Ctrl+B)"
+            onMouseDown={(e) => {
+              e.preventDefault(); // Prevent losing selection
+              applyFormatting('bold');
+            }}
+            title="Bold (Ctrl+B) - Select text first"
           >
             <Bold className="h-4 w-4" />
           </Button>
           
-          {/* Italic */}
+          {/* Italic - applies to selection */}
           <Button
-            variant={text.isItalic ? "default" : "outline"}
+            variant="outline"
             size="icon"
             className="h-9 w-9"
-            onClick={() => updateItem(sectionIndex, item.id, { 
-              text: { ...text, isItalic: !text.isItalic } 
-            })}
-            title="Italic (Ctrl+I)"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              applyFormatting('italic');
+            }}
+            title="Italic (Ctrl+I) - Select text first"
           >
             <Italic className="h-4 w-4" />
           </Button>
           
-          {/* Underline */}
+          {/* Underline - applies to selection */}
           <Button
-            variant={text.isUnderline ? "default" : "outline"}
+            variant="outline"
             size="icon"
             className="h-9 w-9"
-            onClick={() => updateItem(sectionIndex, item.id, { 
-              text: { ...text, isUnderline: !text.isUnderline } 
-            })}
-            title="Underline (Ctrl+U)"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              applyFormatting('underline');
+            }}
+            title="Underline (Ctrl+U) - Select text first"
           >
             <Underline className="h-4 w-4" />
           </Button>
@@ -305,31 +321,23 @@ const SectionEditor = ({
           </Button>
         </div>
         
-        {/* Text Area - Auto-resize based on content */}
-        <textarea
-          value={text.content}
-          onChange={(e) => {
-            updateItem(sectionIndex, item.id, { 
-              text: { ...text, content: e.target.value } 
-            });
-            autoResizeTextarea(e.target);
-          }}
-          onFocus={(e) => autoResizeTextarea(e.target)}
-          ref={(el) => {
-            if (el) autoResizeTextarea(el);
-          }}
-          placeholder="Start typing here... (Like Microsoft Word)"
-          className="w-full bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none p-4 text-foreground placeholder:text-muted-foreground rounded-md resize-none overflow-hidden"
+        {/* Rich Text Editor - contentEditable div */}
+        <div
+          contentEditable
+          onInput={handleContentChange}
+          onBlur={handleContentChange}
+          dangerouslySetInnerHTML={{ __html: text.content }}
+          data-placeholder="Start typing here... Select text and click Bold/Italic/Underline to format"
+          className="w-full bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none p-4 text-foreground rounded-md min-h-[150px] empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
           style={{ 
             fontSize: `${text.fontSize}px`,
-            fontWeight: text.isBold ? 'bold' : 'normal',
-            fontStyle: text.isItalic ? 'italic' : 'normal',
-            textDecoration: text.isUnderline ? 'underline' : 'none',
             textAlign: text.alignment || 'left',
-            minHeight: '150px',
             lineHeight: '1.6',
           }}
         />
+        <p className="text-xs text-muted-foreground">
+          💡 Tip: Select text, then click Bold/Italic/Underline. You can also use Ctrl+B, Ctrl+I, Ctrl+U
+        </p>
       </div>
     );
   };
