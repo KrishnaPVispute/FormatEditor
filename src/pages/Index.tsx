@@ -11,24 +11,28 @@ import { toast } from "@/hooks/use-toast";
 import SectionEditor, { Section, SectionItem } from "@/components/SectionEditor";
 import TemplatePreviewNew, { TEMPLATES, TemplateInfo } from "@/components/TemplatePreviewNew";
 import { exportToPDF, exportToWord, ExportData } from "@/utils/exportUtils";
-import { getDavidTemplateSections, getDefaultSections } from "@/utils/davidTemplateData";
-import { Save, Wand2, FileDown, FileText, Mail } from "lucide-react";
+import { getDefaultSectionData } from "@/utils/davidTemplateData";
+import { Save, Wand2, FileDown, FileText, Mail, Eye, Edit } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type ViewMode = "editor" | "preview";
 
 const Index = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [generatedTemplate, setGeneratedTemplate] = useState<TemplateInfo | null>(null);
-  const [sections, setSections] = useState<Section[]>([]);
+  const [sections, setSections] = useState<Section[]>(getDefaultSectionData());
   const [activeSection, setActiveSection] = useState(0);
+  const [viewMode, setViewMode] = useState<ViewMode>("editor");
 
-  // Initialize sections when template changes
+  // When template changes, keep the same data but update styling
   useEffect(() => {
-    if (selectedTemplateId === "david-gupte-lcp") {
-      setSections(getDavidTemplateSections());
-    } else if (selectedTemplateId) {
-      const template = TEMPLATES.find(t => t.id === selectedTemplateId);
-      if (template) {
-        setSections(getDefaultSections(template.type));
-      }
+    if (!selectedTemplateId) return;
+    
+    // Data stays the same for all templates - only the theme/styling changes
+    // User can edit or delete the default data
+    const template = TEMPLATES.find(t => t.id === selectedTemplateId);
+    if (template) {
+      setGeneratedTemplate(null); // Reset generated state so user needs to click Generate
     }
   }, [selectedTemplateId]);
 
@@ -50,6 +54,7 @@ const Index = () => {
     const template = TEMPLATES.find(t => t.id === selectedTemplateId);
     if (template) {
       setGeneratedTemplate(template);
+      setViewMode("preview"); // Switch to preview after generating
       toast({ title: "Template Generated", description: `Applied to ${template.name} template.` });
     }
   };
@@ -144,8 +149,11 @@ const Index = () => {
     }));
   };
 
+  const templateType = generatedTemplate?.type || (selectedTemplateId ? TEMPLATES.find(t => t.id === selectedTemplateId)?.type : "LCP") || "LCP";
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-20">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -161,32 +169,64 @@ const Index = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <Button onClick={handleGenerate}><Wand2 className="h-4 w-4 mr-2" />Generate</Button>
-              <Button onClick={handleExportPDF} variant="outline" disabled={!generatedTemplate}><FileDown className="h-4 w-4 mr-2" />PDF</Button>
-              <Button onClick={handleExportWord} variant="outline" disabled={!generatedTemplate}><FileText className="h-4 w-4 mr-2" />Word</Button>
-              <Button onClick={handleExportEmail} variant="outline" disabled={!generatedTemplate}><Mail className="h-4 w-4 mr-2" />Email</Button>
+              <Button onClick={handleGenerate} disabled={!selectedTemplateId}>
+                <Wand2 className="h-4 w-4 mr-2" />Generate
+              </Button>
+              <Button onClick={handleExportPDF} variant="outline" disabled={!generatedTemplate}>
+                <FileDown className="h-4 w-4 mr-2" />PDF
+              </Button>
+              <Button onClick={handleExportWord} variant="outline" disabled={!generatedTemplate}>
+                <FileText className="h-4 w-4 mr-2" />Word
+              </Button>
+              <Button onClick={handleExportEmail} variant="outline" disabled={!generatedTemplate}>
+                <Mail className="h-4 w-4 mr-2" />Email
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
+      {/* Toggle View Buttons */}
+      <div className="bg-muted border-b border-border">
+        <div className="container mx-auto px-4 py-2 flex items-center justify-center gap-2">
+          <Button
+            variant={viewMode === "editor" ? "default" : "outline"}
+            onClick={() => setViewMode("editor")}
+            className="flex items-center gap-2"
+          >
+            <Edit className="h-4 w-4" />
+            Section Editor
+          </Button>
+          <Button
+            variant={viewMode === "preview" ? "default" : "outline"}
+            onClick={() => setViewMode("preview")}
+            className="flex items-center gap-2"
+          >
+            <Eye className="h-4 w-4" />
+            Template Preview
+          </Button>
+          <Button onClick={handleSave} variant="ghost" size="sm" className="ml-4">
+            <Save className="h-4 w-4 mr-2" />Save
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Content - Full Width Single View */}
+      <main className="flex-1 container mx-auto px-4 py-6">
+        {viewMode === "editor" ? (
+          <div className="max-w-5xl mx-auto">
             <SectionEditor 
               sections={sections} 
               onChange={setSections} 
               activeSection={activeSection}
-              onActiveSectionChange={setActiveSection}
-              templateType={generatedTemplate?.type}
+              onActiveSectionChange={(index) => {
+                setActiveSection(index);
+              }}
+              templateType={templateType}
             />
-            <div className="flex justify-center pt-4">
-              <Button onClick={handleSave} variant="outline" size="lg"><Save className="h-5 w-5 mr-2" />Save Content</Button>
-            </div>
           </div>
-
-          <div className="lg:sticky lg:top-24 lg:self-start overflow-auto max-h-[calc(100vh-120px)]">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Template Preview</h2>
+        ) : (
+          <div className="overflow-x-auto flex justify-center">
             <TemplatePreviewNew
               template={generatedTemplate}
               sections={sections}
@@ -196,7 +236,7 @@ const Index = () => {
               patientName={getPatientName()}
             />
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
