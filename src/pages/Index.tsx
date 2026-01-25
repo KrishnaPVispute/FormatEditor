@@ -92,19 +92,36 @@ const Index = () => {
     }
     toast({ title: "Exporting Word", description: "Generating..." });
     try {
+      // Convert sections to export format with full data
       const exportData: ExportData = {
         template: generatedTemplate.name,
         patientName: getPatientName(),
-        textItems: sections.flatMap(s => s.items.filter(i => i.text).map(i => ({ 
-          type: "paragraph" as const, 
-          content: i.text!.content 
-        }))),
-        tableData: { rows: sections.flatMap(s => s.items.filter(i => i.tableData).flatMap(i => i.tableData!.rows)) },
+        textItems: [],
+        tableData: { rows: [] },
         mixedItems: [],
+        sections: sections.map(section => ({
+          title: section.title,
+          items: section.items.map(item => ({
+            type: item.type,
+            text: item.text ? {
+              content: item.text.content,
+              fontSize: item.text.fontSize,
+              isBold: item.text.isBold,
+              isItalic: item.text.isItalic,
+              isUnderline: item.text.isUnderline,
+              alignment: item.text.alignment,
+            } : undefined,
+            tableData: item.tableData ? {
+              header: item.tableData.header,
+              rows: item.tableData.rows,
+            } : undefined,
+          })),
+        })),
       };
       await exportToWord(exportData, `${generatedTemplate.name}_Report`);
       toast({ title: "Word Exported", description: "Downloaded successfully." });
     } catch (error) {
+      console.error('Word export error:', error);
       toast({ title: "Export Failed", description: "Error exporting Word.", variant: "destructive" });
     }
   };
