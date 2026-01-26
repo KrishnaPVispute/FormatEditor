@@ -260,6 +260,30 @@ const SectionEditor = ({
           </Button>
         </div>
         
+        {/* Delete Column Header Row */}
+        <div className="overflow-x-auto mb-1">
+          <table className="w-full border-collapse">
+            <tbody>
+              <tr>
+                {rows[0]?.map((_, ci) => (
+                  <td key={ci} className="p-0 text-center" style={{ minWidth: '100px' }}>
+                    {rows[0]?.length > 1 && (
+                      <button
+                        onClick={() => removeTableColumn(sectionIndex, item.id, ci)}
+                        className="text-destructive hover:text-destructive/80 p-1 opacity-50 hover:opacity-100 transition-opacity"
+                        title="Delete column"
+                      >
+                        <Trash2 className="h-3 w-3 mx-auto" />
+                      </button>
+                    )}
+                  </td>
+                ))}
+                <td className="w-8"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
         {/* Formula Help */}
         <div className="mb-3 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
           <strong>Formulas:</strong> Type formula → press <kbd className="bg-muted px-1 rounded border">Enter</kbd> to calculate. Examples: <code className="bg-muted px-1 rounded">=SUM(A2:A5)</code>, <code className="bg-muted px-1 rounded">=SUB(B2,B3)</code>, <code className="bg-muted px-1 rounded">=MUL(C2:C4)</code>, <code className="bg-muted px-1 rounded">=DIV(D2,D3)</code>
