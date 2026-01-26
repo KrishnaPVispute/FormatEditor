@@ -78,7 +78,9 @@ const getCellValue = (
   const result = evaluateFormulaInternal(cellValue, rows, visited, depth + 1);
   if (result.error) return null;
   
-  const numValue = parseFloat(result.value);
+  // Strip currency symbols and formatting before parsing
+  const cleanValue = result.value.replace(/[$€£¥,\s]/g, '');
+  const numValue = parseFloat(cleanValue);
   return isNaN(numValue) ? null : numValue;
 };
 
@@ -131,7 +133,9 @@ const parseFormulaArgs = (
               const cellValue = rows[r][c];
               const result = evaluateFormulaInternal(cellValue, rows, visited, depth + 1);
               if (!result.error) {
-                const numValue = parseFloat(result.value);
+                // Strip currency symbols before parsing
+                const cleanValue = result.value.replace(/[$€£¥,\s]/g, '');
+                const numValue = parseFloat(cleanValue);
                 if (!isNaN(numValue)) {
                   values.push(numValue);
                 }
@@ -147,8 +151,9 @@ const parseFormulaArgs = (
         values.push(value);
       }
     } else {
-      // It's a direct number - validate format
-      const sanitizedArg = arg.replace(/[^\d.\-]/g, '');
+      // It's a direct number - strip currency symbols and formatting
+      // Remove $, €, £, ¥, commas, spaces and other non-numeric chars except . and -
+      const sanitizedArg = arg.replace(/[$€£¥,\s]/g, '').replace(/[^\d.\-]/g, '');
       const numValue = parseFloat(sanitizedArg);
       if (!isNaN(numValue) && isFinite(numValue)) {
         values.push(numValue);

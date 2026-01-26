@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { getDisplayValue } from "@/utils/tableFormulas";
 import { Input } from "@/components/ui/input";
+import RichTextEditor from "./RichTextEditor";
 
 export interface FormattedText {
   content: string; // Now stores HTML content for rich text
@@ -40,7 +41,7 @@ interface SectionEditorProps {
   templateType?: "LCA" | "LCP";
 }
 
-const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32];
+// FONT_SIZES moved to RichTextEditor component
 
 const SectionEditor = ({ 
   sections, 
@@ -174,168 +175,21 @@ const SectionEditor = ({
     }
   };
 
-  // Apply formatting to selected text using execCommand
+  // Apply formatting to selected text using execCommand (used by RichTextEditor callback)
   const applyFormatting = (command: string) => {
     document.execCommand(command, false);
   };
 
   const renderTextItem = (sectionIndex: number, item: SectionItem) => {
     if (!item.text) return null;
-    const text = item.text;
-    
-    // Handle content change from contentEditable
-    const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
-      const htmlContent = e.currentTarget.innerHTML;
-      updateItem(sectionIndex, item.id, { 
-        text: { ...text, content: htmlContent } 
-      });
-    };
     
     return (
-      <div className="flex flex-col gap-3 group bg-card border border-border rounded-lg p-4 shadow-sm">
-        {/* Word-like Toolbar */}
-        <div className="flex items-center gap-1 flex-wrap border-b border-border pb-3 mb-2">
-          {/* Font Size */}
-          <Select
-            value={text.fontSize.toString()}
-            onValueChange={(val) => updateItem(sectionIndex, item.id, { 
-              text: { ...text, fontSize: parseInt(val) } 
-            })}
-          >
-            <SelectTrigger className="w-20 h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FONT_SIZES.map(size => (
-                <SelectItem key={size} value={size.toString()}>{size}px</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <div className="w-px h-6 bg-border mx-2" />
-          
-          {/* Bold - applies to selection */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            onMouseDown={(e) => {
-              e.preventDefault(); // Prevent losing selection
-              applyFormatting('bold');
-            }}
-            title="Bold (Ctrl+B) - Select text first"
-          >
-            <Bold className="h-4 w-4" />
-          </Button>
-          
-          {/* Italic - applies to selection */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              applyFormatting('italic');
-            }}
-            title="Italic (Ctrl+I) - Select text first"
-          >
-            <Italic className="h-4 w-4" />
-          </Button>
-          
-          {/* Underline - applies to selection */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              applyFormatting('underline');
-            }}
-            title="Underline (Ctrl+U) - Select text first"
-          >
-            <Underline className="h-4 w-4" />
-          </Button>
-          
-          <div className="w-px h-6 bg-border mx-2" />
-          
-          {/* Text Alignment */}
-          <Button
-            variant={text.alignment === 'left' ? "default" : "outline"}
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => updateItem(sectionIndex, item.id, { 
-              text: { ...text, alignment: 'left' } 
-            })}
-            title="Align Left"
-          >
-            <AlignLeft className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant={text.alignment === 'center' ? "default" : "outline"}
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => updateItem(sectionIndex, item.id, { 
-              text: { ...text, alignment: 'center' } 
-            })}
-            title="Align Center"
-          >
-            <AlignCenter className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant={text.alignment === 'right' ? "default" : "outline"}
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => updateItem(sectionIndex, item.id, { 
-              text: { ...text, alignment: 'right' } 
-            })}
-            title="Align Right"
-          >
-            <AlignRight className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant={text.alignment === 'justify' ? "default" : "outline"}
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => updateItem(sectionIndex, item.id, { 
-              text: { ...text, alignment: 'justify' } 
-            })}
-            title="Justify"
-          >
-            <AlignJustify className="h-4 w-4" />
-          </Button>
-          
-          <div className="flex-1" />
-          
-          {/* Delete Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => removeItem(sectionIndex, item.id)}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-9 w-9"
-            title="Delete"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        {/* Rich Text Editor - contentEditable div */}
-        <div
-          contentEditable
-          onInput={handleContentChange}
-          onBlur={handleContentChange}
-          dangerouslySetInnerHTML={{ __html: text.content }}
-          data-placeholder="Start typing here... Select text and click Bold/Italic/Underline to format"
-          className="w-full bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none p-4 text-foreground rounded-md min-h-[150px] empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
-          style={{ 
-            fontSize: `${text.fontSize}px`,
-            textAlign: text.alignment || 'left',
-            lineHeight: '1.6',
-          }}
-        />
-      </div>
+      <RichTextEditor
+        key={item.id}
+        text={item.text}
+        onTextChange={(newText) => updateItem(sectionIndex, item.id, { text: newText })}
+        onDelete={() => removeItem(sectionIndex, item.id)}
+      />
     );
   };
 

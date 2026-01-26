@@ -7,6 +7,7 @@ import paulGhattasLogo from "@/assets/paul-ghattas-logo.png";
 import lcpDoctorProfile from "@/assets/lcp-doctor-profile.jpg";
 import paulGhattasProfile from "@/assets/paul-ghattas-profile.jpg";
 import neilGhodadraProfile from "@/assets/neil-ghodadra-profile.jpg";
+import stanleyGravesProfile from "@/assets/stanley-graves-profile.jpg";
 import { Section, SectionItem, FormattedText } from "./SectionEditor";
 
 export interface TemplateInfo {
@@ -19,7 +20,7 @@ export interface TemplateInfo {
 export const TEMPLATES: TemplateInfo[] = [
   { id: "neil-ghodadra-lca", name: "Neil Ghodadra (LCA)", type: "LCA", doctorName: "NEIL GHODADRA, M.D." },
   { id: "paul-ghattas-lcp", name: "Paul Ghattas (LCP)", type: "LCP", doctorName: "Paul Ghattas, D.O." },
-  { id: "david-gupte-lcp", name: "1937 LCP David", type: "LCP", doctorName: "Paul Ghattas, D.O." },
+  { id: "stanley-graves-lca", name: "Stanley Graves (LCA)", type: "LCA", doctorName: "STANLEY GRAVES, M.D." },
 ];
 
 interface TemplatePreviewNewProps {
@@ -87,7 +88,8 @@ const TemplatePreviewNew = ({
   const getDoctorProfileImage = () => {
     if (template.id === "neil-ghodadra-lca") return neilGhodadraProfile;
     if (template.id === "paul-ghattas-lcp") return paulGhattasProfile;
-    return lcpDoctorProfile; // For david-gupte-lcp
+    if (template.id === "stanley-graves-lca") return stanleyGravesProfile;
+    return lcpDoctorProfile;
   };
 
   const baseTextStyle: React.CSSProperties = {
