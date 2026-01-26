@@ -231,12 +231,27 @@ const TemplatePreviewNew = ({
     if (!item.text) return null;
     const text = item.text;
     
-    // Strip HTML for clean preview display
+    // Strip HTML for clean preview display, but preserve the plain text structure
     const cleanContent = stripHtmlForPreview(text.content);
     
     // Calculate approximate line count for auto-height
     const lineCount = Math.max(1, Math.ceil((cleanContent.length * (text.fontSize / 11)) / 80));
     const minHeight = Math.max(24, lineCount * (text.fontSize * 1.5));
+    
+    // Handle paste event to preserve text structure
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      e.preventDefault();
+      const pastedText = e.clipboardData.getData('text/plain');
+      const target = e.target as HTMLTextAreaElement;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const currentValue = target.value;
+      const newValue = currentValue.substring(0, start) + pastedText + currentValue.substring(end);
+      
+      onSectionChange(sectionIndex, itemIndex, {
+        text: { ...text, content: newValue }
+      });
+    };
     
     return (
       <textarea
@@ -244,6 +259,7 @@ const TemplatePreviewNew = ({
         onChange={(e) => onSectionChange(sectionIndex, itemIndex, {
           text: { ...text, content: e.target.value }
         })}
+        onPaste={handlePaste}
         placeholder="[Text placeholder]"
         style={{
           ...baseTextStyle,
@@ -254,6 +270,8 @@ const TemplatePreviewNew = ({
           textAlign: text.alignment || 'left',
           marginBottom: '12px',
           whiteSpace: 'pre-wrap',
+          wordWrap: 'break-word',
+          overflowWrap: 'break-word',
           color: '#000000',
           width: '100%',
           border: 'none',
