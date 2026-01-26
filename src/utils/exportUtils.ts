@@ -193,11 +193,22 @@ const fetchImageAsBase64 = async (imageSrc: string): Promise<Uint8Array> => {
 };
 
 // Export to Word document - matches the template preview exactly
+// Helper to strip HTML tags and convert to plain text
+const stripHtml = (html: string): string => {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+};
+
 export const exportToWord = async (data: ExportData, filename: string) => {
   const isLCA = data.template.includes('LCA');
   const headerColor = isLCA ? 'CC7900' : '2E74B5';
   const altRowColor = isLCA ? 'FFF5E6' : 'E6F0FA';
-  const doctorName = isLCA ? 'NEIL GHODADRA, M.D.' : 'PAUL GHATTAS, D.O.';
+  // Handle Stanley Graves as a separate LCA doctor
+  let doctorName = isLCA ? 'NEIL GHODADRA, M.D.' : 'PAUL GHATTAS, D.O.';
+  if (data.template.toLowerCase().includes('stanley') || data.template.toLowerCase().includes('graves')) {
+    doctorName = 'STANLEY GRAVES, M.D.';
+  }
   const reportType = isLCA ? 'Life Care Analysis' : 'Life Care Plan';
   const currentDate = new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
@@ -394,11 +405,13 @@ export const exportToWord = async (data: ExportData, filename: string) => {
       section.items.forEach((item) => {
         if (item.type === 'text' && item.text) {
           const text = item.text;
+          // Strip HTML tags from rich text content for Word export
+          const plainContent = stripHtml(text.content || '');
           children.push(
             new Paragraph({
               children: [
                 new TextRun({
-                  text: text.content || '',
+                  text: plainContent,
                   bold: text.isBold || false,
                   italics: text.isItalic || false,
                   underline: text.isUnderline ? {} : undefined,
