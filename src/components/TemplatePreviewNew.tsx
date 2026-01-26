@@ -264,14 +264,15 @@ const TemplatePreviewNew = ({
         style={{
           ...baseTextStyle,
           fontSize: `${text.fontSize}px`,
-          fontWeight: text.isBold ? 'bold' : 'normal',
-          fontStyle: text.isItalic ? 'italic' : 'normal',
-          textDecoration: text.isUnderline ? 'underline' : 'none',
-          textAlign: text.alignment || 'left',
+          fontWeight: 'normal', // Always normal - rich text formatting is in HTML content
+          fontStyle: 'normal',
+          textDecoration: 'none',
+          textAlign: text.alignment || 'justify', // Justify for full-width text flow
           marginBottom: '12px',
           whiteSpace: 'pre-wrap',
           wordWrap: 'break-word',
           overflowWrap: 'break-word',
+          wordBreak: 'normal',
           color: '#000000',
           width: '100%',
           border: 'none',
@@ -281,6 +282,7 @@ const TemplatePreviewNew = ({
           minHeight: `${minHeight}px`,
           overflow: 'hidden',
           lineHeight: '1.5',
+          display: 'block',
         }}
         rows={Math.max(1, cleanContent.split('\n').length)}
         onInput={(e) => {
