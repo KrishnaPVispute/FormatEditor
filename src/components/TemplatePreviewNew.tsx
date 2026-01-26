@@ -206,17 +206,41 @@ const TemplatePreviewNew = ({
     );
   };
 
+  // Helper to strip HTML and convert to clean text with proper line breaks
+  const stripHtmlForPreview = (html: string): string => {
+    // Replace div and br tags with newlines, then strip remaining HTML
+    let text = html
+      .replace(/<div>/gi, '\n')
+      .replace(/<\/div>/gi, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<p>/gi, '\n')
+      .replace(/<\/p>/gi, '')
+      .replace(/<span[^>]*>/gi, '')
+      .replace(/<\/span>/gi, '');
+    
+    // Strip any remaining HTML tags
+    const tmp = document.createElement('div');
+    tmp.innerHTML = text;
+    text = tmp.textContent || tmp.innerText || '';
+    
+    // Clean up multiple newlines and trim
+    return text.replace(/\n{3,}/g, '\n\n').trim();
+  };
+
   const renderTextItem = (item: SectionItem, sectionIndex: number, itemIndex: number) => {
     if (!item.text) return null;
     const text = item.text;
     
+    // Strip HTML for clean preview display
+    const cleanContent = stripHtmlForPreview(text.content);
+    
     // Calculate approximate line count for auto-height
-    const lineCount = Math.max(1, Math.ceil((text.content.length * (text.fontSize / 11)) / 80));
+    const lineCount = Math.max(1, Math.ceil((cleanContent.length * (text.fontSize / 11)) / 80));
     const minHeight = Math.max(24, lineCount * (text.fontSize * 1.5));
     
     return (
       <textarea
-        value={text.content}
+        value={cleanContent}
         onChange={(e) => onSectionChange(sectionIndex, itemIndex, {
           text: { ...text, content: e.target.value }
         })}
@@ -240,7 +264,7 @@ const TemplatePreviewNew = ({
           overflow: 'hidden',
           lineHeight: '1.5',
         }}
-        rows={Math.max(1, text.content.split('\n').length)}
+        rows={Math.max(1, cleanContent.split('\n').length)}
         onInput={(e) => {
           const target = e.target as HTMLTextAreaElement;
           target.style.height = 'auto';
