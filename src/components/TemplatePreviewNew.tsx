@@ -4,6 +4,7 @@ import { FileText } from "lucide-react";
 import { getDisplayValue } from "@/utils/tableFormulas";
 import neilGhodadraLogo from "@/assets/neil-ghodadra-logo.jpg";
 import paulGhattasLogo from "@/assets/paul-ghattas-logo.png";
+import stanleyGravesLogo from "@/assets/stanley-graves-logo.png";
 import lcpDoctorProfile from "@/assets/lcp-doctor-profile.jpg";
 import paulGhattasProfile from "@/assets/paul-ghattas-profile.jpg";
 import neilGhodadraProfile from "@/assets/neil-ghodadra-profile.jpg";
@@ -76,8 +77,10 @@ const TemplatePreviewNew = ({
   }
 
   const isLCA = template.type === "LCA";
-  const themeColor = isLCA ? '#CC7900' : '#2E74B5';
-  const altRowColor = isLCA ? '#FFF5E6' : '#E6F0FA';
+  const isStanleyGraves = template.id === "stanley-graves-lca";
+  // Stanley Graves uses a teal/green color theme, others use standard LCA/LCP colors
+  const themeColor = isStanleyGraves ? '#2E8B57' : (isLCA ? '#CC7900' : '#2E74B5');
+  const altRowColor = isStanleyGraves ? '#E6F5EE' : (isLCA ? '#FFF5E6' : '#E6F0FA');
   const currentDate = new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'long', 
@@ -90,6 +93,14 @@ const TemplatePreviewNew = ({
     if (template.id === "paul-ghattas-lcp") return paulGhattasProfile;
     if (template.id === "stanley-graves-lca") return stanleyGravesProfile;
     return lcpDoctorProfile;
+  };
+
+  // Get the correct doctor logo based on template
+  const getDoctorLogo = () => {
+    if (template.id === "neil-ghodadra-lca") return neilGhodadraLogo;
+    if (template.id === "paul-ghattas-lcp") return paulGhattasLogo;
+    if (template.id === "stanley-graves-lca") return stanleyGravesLogo;
+    return isLCA ? neilGhodadraLogo : paulGhattasLogo;
   };
 
   const baseTextStyle: React.CSSProperties = {
@@ -404,6 +415,74 @@ const TemplatePreviewNew = ({
     </div>
   );
 
+  // Render Stanley Graves Cover Page
+  const renderStanleyGravesCoverPage = () => (
+    <div style={pageStyle}>
+      <div style={{ 
+        height: `${A4_HEIGHT}px`, 
+        display: 'flex', 
+        flexDirection: 'column',
+        padding: '60px 50px 40px 50px',
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          marginBottom: '40px',
+        }}>
+          <img 
+            src={stanleyGravesLogo} 
+            alt="SG Logo" 
+            style={{ height: '100px', width: 'auto', marginBottom: '20px' }}
+          />
+          <h1 style={{ 
+            fontSize: '28px', 
+            fontWeight: 'bold', 
+            color: '#000000',
+            fontFamily: 'Times New Roman, serif',
+            margin: 0,
+          }}>
+            STANLEY GRAVES, M.D.
+          </h1>
+        </div>
+
+        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <p style={{ fontSize: '14px', color: '#000000', margin: '4px 0' }}>
+            Board-Certified Orthopedic Surgeon
+          </p>
+          <p style={{ fontSize: '14px', color: '#000000', margin: '4px 0' }}>
+            Certified Life Care Planner
+          </p>
+        </div>
+
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#000000', margin: 0 }}>
+            LIFE CARE ANALYSIS
+          </h1>
+        </div>
+
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <p style={{ fontSize: '16px', color: '#000000', margin: '10px 0' }}>For</p>
+          <p style={{ fontSize: '18px', color: '#2E8B57', margin: '10px 0' }}>{patientName}</p>
+        </div>
+
+        <div style={{ textAlign: 'center', flex: 1 }}>
+          <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#000000' }}>{currentDate}</p>
+        </div>
+
+        <div style={{ borderTop: '1px solid #ddd', paddingTop: '20px', marginTop: 'auto' }}>
+          <p style={{ fontSize: '12px', color: '#2E8B57', textAlign: 'center', margin: '0 0 8px 0' }}>1</p>
+          <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#2E8B57', textAlign: 'center', margin: '0 0 10px 0' }}>
+            STANLEY GRAVES, M.D.
+          </p>
+          <p style={{ fontSize: '9px', color: '#000000', textAlign: 'center', lineHeight: '1.4' }}>
+            This report is confidential and protected by attorney-client privilege. It is intended solely for the named recipient and contains information related to a Life Care Analysis (LCA). Any unauthorized disclosure, copying, or distribution of this report is strictly prohibited.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   // Render content page with header and footer
   const renderContentPage = (
     sectionIndex: number, 
@@ -411,8 +490,8 @@ const TemplatePreviewNew = ({
     content: React.ReactNode,
     isLastSection: boolean = false
   ) => {
-    const logo = isLCA ? neilGhodadraLogo : paulGhattasLogo;
-    const doctorName = isLCA ? 'NEIL GHODADRA, M.D.' : 'PAUL GHATTAS, D.O.';
+    const logo = getDoctorLogo();
+    const doctorName = isStanleyGraves ? 'STANLEY GRAVES, M.D.' : (isLCA ? 'NEIL GHODADRA, M.D.' : 'PAUL GHATTAS, D.O.');
     const reportType = isLCA ? 'Life Care Analysis (LCA)' : 'Life Care Plan (LCP)';
     const section = sections[sectionIndex];
 
@@ -530,10 +609,17 @@ const TemplatePreviewNew = ({
     return pages;
   };
 
+  // Helper to render the appropriate cover page
+  const renderCoverPage = () => {
+    if (isStanleyGraves) return renderStanleyGravesCoverPage();
+    if (isLCA) return renderLCACoverPage();
+    return renderLCPCoverPage();
+  };
+
   return (
     <div id="template-preview-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Cover Page */}
-      {isLCA ? renderLCACoverPage() : renderLCPCoverPage()}
+      {renderCoverPage()}
 
       {/* Section Pages */}
       {renderSectionPages()}
