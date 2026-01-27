@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 import { getDisplayValue } from "@/utils/tableFormulas";
@@ -241,26 +241,41 @@ const TemplatePreviewNew = ({
     if (!item.text) return null;
     const text = item.text;
 
-    const hasHtmlTags = /<[^>]+>/g.test(text.content);
-    const displayContent = hasHtmlTags ? stripHtmlForPreview(text.content) : text.content;
+    // Use local state for the textarea to prevent cursor jumping on re-renders
+    const [localValue, setLocalValue] = useState(() => {
+      const hasHtml = /<[^>]+>/g.test(text.content);
+      return hasHtml ? stripHtmlForPreview(text.content) : text.content;
+    });
+    const isTypingRef = useRef(false);
 
-    // Convert HTML -> plain text ONCE (effect), avoiding state writes during render.
-    // This prevents async overwrite races that can "re-add" one blank line after deletion.
+    // Sync local state with props when external changes occur (not from typing)
     useEffect(() => {
-      if (!hasHtmlTags) return;
+      if (isTypingRef.current) {
+        isTypingRef.current = false;
+        return;
+      }
+      const hasHtml = /<[^>]+>/g.test(text.content);
+      const newValue = hasHtml ? stripHtmlForPreview(text.content) : text.content;
+      setLocalValue(newValue);
+    }, [text.content]);
+
+    // Convert HTML to plain text and update parent state once
+    useEffect(() => {
+      const hasHtml = /<[^>]+>/g.test(text.content);
+      if (!hasHtml) return;
       const cleaned = stripHtmlForPreview(text.content);
       if (cleaned === text.content) return;
       onSectionChange(sectionIndex, itemIndex, {
         text: { ...text, content: cleaned },
       });
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasHtmlTags, sectionIndex, itemIndex]);
+    }, []);
 
     // Calculate approximate line count for auto-height
-    const lineCount = Math.max(1, Math.ceil((displayContent.length * (text.fontSize / 11)) / 80));
+    const lineCount = Math.max(1, Math.ceil((localValue.length * (text.fontSize / 11)) / 80));
     const minHeight = Math.max(24, lineCount * (text.fontSize * 1.5));
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
       e.preventDefault();
       const pastedText = e.clipboardData.getData('text/plain');
       const target = e.target as HTMLTextAreaElement;
@@ -269,20 +284,25 @@ const TemplatePreviewNew = ({
       const currentValue = target.value;
       const newValue = currentValue.substring(0, start) + pastedText + currentValue.substring(end);
 
+      isTypingRef.current = true;
+      setLocalValue(newValue);
       onSectionChange(sectionIndex, itemIndex, {
         text: { ...text, content: newValue },
       });
-    };
+    }, [sectionIndex, itemIndex, text, onSectionChange]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const newValue = e.target.value;
+      isTypingRef.current = true;
+      setLocalValue(newValue);
       onSectionChange(sectionIndex, itemIndex, {
-        text: { ...text, content: e.target.value },
+        text: { ...text, content: newValue },
       });
-    };
+    }, [sectionIndex, itemIndex, text, onSectionChange]);
 
     return (
       <textarea
-        value={displayContent}
+        value={localValue}
         onChange={handleChange}
         onPaste={handlePaste}
         placeholder="[Text placeholder]"
@@ -309,7 +329,7 @@ const TemplatePreviewNew = ({
           lineHeight: '1.5',
           display: 'block',
         }}
-        rows={Math.max(1, displayContent.split('\n').length)}
+        rows={Math.max(1, localValue.split('\n').length)}
         onInput={(e) => {
           const target = e.target as HTMLTextAreaElement;
           target.style.height = 'auto';
