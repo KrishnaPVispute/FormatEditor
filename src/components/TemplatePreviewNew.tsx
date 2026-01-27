@@ -232,11 +232,13 @@ const TemplatePreviewNew = ({
     if (!item.text) return null;
     const text = item.text;
     
-    // Strip HTML for clean preview display, but preserve the plain text structure
-    const cleanContent = stripHtmlForPreview(text.content);
+    // Check if content contains HTML tags - if so, strip them once for display
+    // If it's already plain text (user edited in preview), use as-is
+    const hasHtmlTags = /<[^>]+>/g.test(text.content);
+    const displayContent = hasHtmlTags ? stripHtmlForPreview(text.content) : text.content;
     
     // Calculate approximate line count for auto-height
-    const lineCount = Math.max(1, Math.ceil((cleanContent.length * (text.fontSize / 11)) / 80));
+    const lineCount = Math.max(1, Math.ceil((displayContent.length * (text.fontSize / 11)) / 80));
     const minHeight = Math.max(24, lineCount * (text.fontSize * 1.5));
     
     // Handle paste event to preserve text structure
@@ -249,26 +251,32 @@ const TemplatePreviewNew = ({
       const currentValue = target.value;
       const newValue = currentValue.substring(0, start) + pastedText + currentValue.substring(end);
       
+      // Save as plain text directly
       onSectionChange(sectionIndex, itemIndex, {
         text: { ...text, content: newValue }
       });
     };
     
+    // Handle text changes - save plain text directly so spacing is preserved
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      onSectionChange(sectionIndex, itemIndex, {
+        text: { ...text, content: e.target.value }
+      });
+    };
+    
     return (
       <textarea
-        value={cleanContent}
-        onChange={(e) => onSectionChange(sectionIndex, itemIndex, {
-          text: { ...text, content: e.target.value }
-        })}
+        value={displayContent}
+        onChange={handleChange}
         onPaste={handlePaste}
         placeholder="[Text placeholder]"
         style={{
           ...baseTextStyle,
           fontSize: `${text.fontSize}px`,
-          fontWeight: 'normal', // Always normal - rich text formatting is in HTML content
+          fontWeight: 'normal',
           fontStyle: 'normal',
           textDecoration: 'none',
-          textAlign: text.alignment || 'justify', // Justify for full-width text flow
+          textAlign: text.alignment || 'justify',
           marginBottom: '12px',
           whiteSpace: 'pre-wrap',
           wordWrap: 'break-word',
@@ -285,7 +293,7 @@ const TemplatePreviewNew = ({
           lineHeight: '1.5',
           display: 'block',
         }}
-        rows={Math.max(1, cleanContent.split('\n').length)}
+        rows={Math.max(1, displayContent.split('\n').length)}
         onInput={(e) => {
           const target = e.target as HTMLTextAreaElement;
           target.style.height = 'auto';
