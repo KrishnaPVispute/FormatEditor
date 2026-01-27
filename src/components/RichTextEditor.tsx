@@ -15,39 +15,36 @@ interface RichTextEditorProps {
 const RichTextEditor = ({ text, onTextChange, onDelete }: RichTextEditorProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const lastContentRef = useRef<string>(text.content);
-  const isUserTypingRef = useRef<boolean>(false);
+  const isInternalChangeRef = useRef<boolean>(false);
   
   // Initialize content on mount only
   useEffect(() => {
-    if (contentRef.current && !isUserTypingRef.current) {
+    if (contentRef.current) {
       contentRef.current.innerHTML = text.content;
     }
     lastContentRef.current = text.content;
   }, []);
   
-  // Only update from outside if content actually changed externally
+  // Only update from outside if content actually changed externally (not from user input)
   useEffect(() => {
-    if (contentRef.current && text.content !== lastContentRef.current && !isUserTypingRef.current) {
-      // This is an external update (not from user typing)
-      // Only update if the element is not focused
+    if (contentRef.current && text.content !== lastContentRef.current && !isInternalChangeRef.current) {
+      // External update - only apply if not focused
       if (document.activeElement !== contentRef.current) {
         contentRef.current.innerHTML = text.content;
       }
       lastContentRef.current = text.content;
     }
+    // Reset the flag
+    isInternalChangeRef.current = false;
   }, [text.content]);
   
-  // Handle content change from contentEditable
+  // Handle content change from contentEditable - no cursor manipulation needed
   const handleContentChange = useCallback(() => {
     if (contentRef.current) {
-      isUserTypingRef.current = true;
+      isInternalChangeRef.current = true;
       const htmlContent = contentRef.current.innerHTML;
       lastContentRef.current = htmlContent;
       onTextChange({ ...text, content: htmlContent });
-      // Reset the flag after a short delay to allow for state updates
-      setTimeout(() => {
-        isUserTypingRef.current = false;
-      }, 50);
     }
   }, [text, onTextChange]);
   
