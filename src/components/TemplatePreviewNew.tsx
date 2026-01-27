@@ -223,40 +223,43 @@ const TemplatePreviewNew = ({
     tmp.innerHTML = text;
     text = tmp.textContent || tmp.innerText || '';
 
-    // Normalize Windows newlines and trim leading/trailing whitespace
-    // But preserve internal multiple newlines that users add intentionally
+    // Normalize Windows newlines and trim leading/trailing whitespace.
+    // IMPORTANT: this should ONLY be applied when converting HTML -> plain text.
+    // Preview editing afterwards must use raw text so users can add/remove blank lines freely.
     return text.replace(/\r\n/g, '\n').trim();
   };
 
-  const renderTextItem = (item: SectionItem, sectionIndex: number, itemIndex: number) => {
+  const PreviewTextItem = ({
+    item,
+    sectionIndex,
+    itemIndex,
+  }: {
+    item: SectionItem;
+    sectionIndex: number;
+    itemIndex: number;
+  }) => {
     if (!item.text) return null;
     const text = item.text;
-    
-    // Check if content contains HTML tags - if so, strip them and save immediately
-    // This ensures all future edits work on plain text
+
     const hasHtmlTags = /<[^>]+>/g.test(text.content);
-    
-    // If content has HTML, convert to plain text and save immediately
-    // Once converted, use raw text.content directly (no trim) so user can freely add/remove lines
-    if (hasHtmlTags) {
-      const cleanedContent = stripHtmlForPreview(text.content);
-      // Use setTimeout to avoid state update during render
-      setTimeout(() => {
-        onSectionChange(sectionIndex, itemIndex, {
-          text: { ...text, content: cleanedContent }
-        });
-      }, 0);
-    }
-    
-    // Use raw content directly - this allows full control over adding/removing newlines
-    // The stripHtmlForPreview is only used once during HTML->text conversion above
     const displayContent = hasHtmlTags ? stripHtmlForPreview(text.content) : text.content;
-    
+
+    // Convert HTML -> plain text ONCE (effect), avoiding state writes during render.
+    // This prevents async overwrite races that can "re-add" one blank line after deletion.
+    useEffect(() => {
+      if (!hasHtmlTags) return;
+      const cleaned = stripHtmlForPreview(text.content);
+      if (cleaned === text.content) return;
+      onSectionChange(sectionIndex, itemIndex, {
+        text: { ...text, content: cleaned },
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasHtmlTags, sectionIndex, itemIndex]);
+
     // Calculate approximate line count for auto-height
     const lineCount = Math.max(1, Math.ceil((displayContent.length * (text.fontSize / 11)) / 80));
     const minHeight = Math.max(24, lineCount * (text.fontSize * 1.5));
-    
-    // Handle paste event to preserve text structure
+
     const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
       e.preventDefault();
       const pastedText = e.clipboardData.getData('text/plain');
@@ -265,19 +268,18 @@ const TemplatePreviewNew = ({
       const end = target.selectionEnd;
       const currentValue = target.value;
       const newValue = currentValue.substring(0, start) + pastedText + currentValue.substring(end);
-      
+
       onSectionChange(sectionIndex, itemIndex, {
-        text: { ...text, content: newValue }
+        text: { ...text, content: newValue },
       });
     };
-    
-    // Handle text changes - save plain text directly so spacing is preserved
+
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       onSectionChange(sectionIndex, itemIndex, {
-        text: { ...text, content: e.target.value }
+        text: { ...text, content: e.target.value },
       });
     };
-    
+
     return (
       <textarea
         value={displayContent}
@@ -314,6 +316,12 @@ const TemplatePreviewNew = ({
           target.style.height = `${target.scrollHeight}px`;
         }}
       />
+    );
+  };
+
+  const renderTextItem = (item: SectionItem, sectionIndex: number, itemIndex: number) => {
+    return (
+      <PreviewTextItem item={item} sectionIndex={sectionIndex} itemIndex={itemIndex} />
     );
   };
 
