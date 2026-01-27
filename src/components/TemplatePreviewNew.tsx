@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 import { getDisplayValue } from "@/utils/tableFormulas";
@@ -10,6 +10,7 @@ import paulGhattasProfile from "@/assets/paul-ghattas-profile.jpg";
 import neilGhodadraProfile from "@/assets/neil-ghodadra-profile.jpg";
 import stanleyGravesProfile from "@/assets/stanley-graves-profile.jpg";
 import { Section, SectionItem, FormattedText } from "./SectionEditor";
+import { PreviewTextItem } from "@/components/PreviewTextItem";
 
 export interface TemplateInfo {
   id: string;
@@ -229,119 +230,16 @@ const TemplatePreviewNew = ({
     return text.replace(/\r\n/g, '\n').trim();
   };
 
-  const PreviewTextItem = ({
-    item,
-    sectionIndex,
-    itemIndex,
-  }: {
-    item: SectionItem;
-    sectionIndex: number;
-    itemIndex: number;
-  }) => {
-    if (!item.text) return null;
-    const text = item.text;
-
-    // Use local state for the textarea to prevent cursor jumping on re-renders
-    const [localValue, setLocalValue] = useState(() => {
-      const hasHtml = /<[^>]+>/g.test(text.content);
-      return hasHtml ? stripHtmlForPreview(text.content) : text.content;
-    });
-    const isTypingRef = useRef(false);
-
-    // Sync local state with props when external changes occur (not from typing)
-    useEffect(() => {
-      if (isTypingRef.current) {
-        isTypingRef.current = false;
-        return;
-      }
-      const hasHtml = /<[^>]+>/g.test(text.content);
-      const newValue = hasHtml ? stripHtmlForPreview(text.content) : text.content;
-      setLocalValue(newValue);
-    }, [text.content]);
-
-    // Convert HTML to plain text and update parent state once
-    useEffect(() => {
-      const hasHtml = /<[^>]+>/g.test(text.content);
-      if (!hasHtml) return;
-      const cleaned = stripHtmlForPreview(text.content);
-      if (cleaned === text.content) return;
-      onSectionChange(sectionIndex, itemIndex, {
-        text: { ...text, content: cleaned },
-      });
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // Calculate approximate line count for auto-height
-    const lineCount = Math.max(1, Math.ceil((localValue.length * (text.fontSize / 11)) / 80));
-    const minHeight = Math.max(24, lineCount * (text.fontSize * 1.5));
-
-    const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      e.preventDefault();
-      const pastedText = e.clipboardData.getData('text/plain');
-      const target = e.target as HTMLTextAreaElement;
-      const start = target.selectionStart;
-      const end = target.selectionEnd;
-      const currentValue = target.value;
-      const newValue = currentValue.substring(0, start) + pastedText + currentValue.substring(end);
-
-      isTypingRef.current = true;
-      setLocalValue(newValue);
-      onSectionChange(sectionIndex, itemIndex, {
-        text: { ...text, content: newValue },
-      });
-    }, [sectionIndex, itemIndex, text, onSectionChange]);
-
-    const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = e.target.value;
-      isTypingRef.current = true;
-      setLocalValue(newValue);
-      onSectionChange(sectionIndex, itemIndex, {
-        text: { ...text, content: newValue },
-      });
-    }, [sectionIndex, itemIndex, text, onSectionChange]);
-
-    return (
-      <textarea
-        value={localValue}
-        onChange={handleChange}
-        onPaste={handlePaste}
-        placeholder="[Text placeholder]"
-        style={{
-          ...baseTextStyle,
-          fontSize: `${text.fontSize}px`,
-          fontWeight: 'normal',
-          fontStyle: 'normal',
-          textDecoration: 'none',
-          textAlign: text.alignment || 'justify',
-          marginBottom: '12px',
-          whiteSpace: 'pre-wrap',
-          wordWrap: 'break-word',
-          overflowWrap: 'break-word',
-          wordBreak: 'normal',
-          color: '#000000',
-          width: '100%',
-          border: 'none',
-          background: 'transparent',
-          outline: 'none',
-          resize: 'none',
-          minHeight: `${minHeight}px`,
-          overflow: 'hidden',
-          lineHeight: '1.5',
-          display: 'block',
-        }}
-        rows={Math.max(1, localValue.split('\n').length)}
-        onInput={(e) => {
-          const target = e.target as HTMLTextAreaElement;
-          target.style.height = 'auto';
-          target.style.height = `${target.scrollHeight}px`;
-        }}
-      />
-    );
-  };
-
   const renderTextItem = (item: SectionItem, sectionIndex: number, itemIndex: number) => {
     return (
-      <PreviewTextItem item={item} sectionIndex={sectionIndex} itemIndex={itemIndex} />
+      <PreviewTextItem
+        item={item}
+        sectionIndex={sectionIndex}
+        itemIndex={itemIndex}
+        baseTextStyle={baseTextStyle}
+        stripHtmlForPreview={stripHtmlForPreview}
+        onSectionChange={onSectionChange}
+      />
     );
   };
 
