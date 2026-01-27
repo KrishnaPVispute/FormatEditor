@@ -222,9 +222,11 @@ const TemplatePreviewNew = ({
     const tmp = document.createElement('div');
     tmp.innerHTML = text;
     text = tmp.textContent || tmp.innerText || '';
-    
-    // Clean up multiple newlines and trim
-    return text.replace(/\n{3,}/g, '\n\n').trim();
+
+    // IMPORTANT: do NOT collapse multiple newlines or trim.
+    // Users may intentionally add extra blank lines between paragraphs in Template Preview.
+    // Preserve spacing exactly (normalize Windows newlines only).
+    return text.replace(/\r\n/g, '\n');
   };
 
   const renderTextItem = (item: SectionItem, sectionIndex: number, itemIndex: number) => {
