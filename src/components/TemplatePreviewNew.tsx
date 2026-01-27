@@ -236,19 +236,21 @@ const TemplatePreviewNew = ({
     // This ensures all future edits work on plain text
     const hasHtmlTags = /<[^>]+>/g.test(text.content);
     
-    // If content has HTML, convert to plain text immediately on first render
-    // This is done via useEffect-like behavior in the onChange
-    const displayContent = hasHtmlTags ? stripHtmlForPreview(text.content) : text.content;
-    
-    // If we detected HTML, immediately save the cleaned version so future edits work correctly
+    // If content has HTML, convert to plain text and save immediately
+    // Once converted, use raw text.content directly (no trim) so user can freely add/remove lines
     if (hasHtmlTags) {
+      const cleanedContent = stripHtmlForPreview(text.content);
       // Use setTimeout to avoid state update during render
       setTimeout(() => {
         onSectionChange(sectionIndex, itemIndex, {
-          text: { ...text, content: displayContent }
+          text: { ...text, content: cleanedContent }
         });
       }, 0);
     }
+    
+    // Use raw content directly - this allows full control over adding/removing newlines
+    // The stripHtmlForPreview is only used once during HTML->text conversion above
+    const displayContent = hasHtmlTags ? stripHtmlForPreview(text.content) : text.content;
     
     // Calculate approximate line count for auto-height
     const lineCount = Math.max(1, Math.ceil((displayContent.length * (text.fontSize / 11)) / 80));
