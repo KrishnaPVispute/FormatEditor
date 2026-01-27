@@ -47,6 +47,57 @@ const RichTextEditor = ({ text, onTextChange, onDelete }: RichTextEditorProps) =
       onTextChange({ ...text, content: htmlContent });
     }
   }, [text, onTextChange]);
+
+  // Handle Enter key to properly insert line breaks and maintain cursor position
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      
+      // Insert a proper line break that creates visual spacing
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        
+        // Create two <br> elements for a paragraph break (visible spacing)
+        const br1 = document.createElement('br');
+        const br2 = document.createElement('br');
+        
+        // Insert the line breaks
+        range.insertNode(br2);
+        range.insertNode(br1);
+        
+        // Move cursor after the breaks
+        range.setStartAfter(br2);
+        range.setEndAfter(br2);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Trigger content change
+        handleContentChange();
+      }
+    } else if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      
+      // Shift+Enter for single line break
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        
+        const br = document.createElement('br');
+        range.insertNode(br);
+        
+        // Move cursor after the break
+        range.setStartAfter(br);
+        range.setEndAfter(br);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        handleContentChange();
+      }
+    }
+  }, [handleContentChange]);
   
   // Apply formatting to selected text using execCommand
   const applyFormatting = (command: string) => {
@@ -187,6 +238,7 @@ const RichTextEditor = ({ text, onTextChange, onDelete }: RichTextEditorProps) =
         ref={contentRef}
         contentEditable
         onInput={handleContentChange}
+        onKeyDown={handleKeyDown}
         data-placeholder="Start typing here... Select text and click Bold/Italic/Underline to format"
         className="w-full bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none p-4 text-foreground rounded-md min-h-[150px] empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
         style={{ 
